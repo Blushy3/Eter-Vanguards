@@ -658,6 +658,16 @@ body.light-theme .player-badge {
   gap: 12px;
 }
 
+.auth-credentials[hidden],
+.auth-signed-in[hidden] {
+  display: none;
+}
+
+.auth-signed-in {
+  display: grid;
+  gap: 12px;
+}
+
 .auth-field {
   display: grid;
   gap: 6px;
@@ -711,6 +721,28 @@ body.light-theme .player-badge {
   font-size: 13px;
   line-height: 1.4;
   color: var(--muted-text);
+}
+
+.auth-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.auth-secondary {
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-secondary[hidden] {
+  display: none;
 }
 
 .management-panel[hidden] {
@@ -1249,15 +1281,25 @@ body.light-theme .player-name {
     <button class="auth-close" id="authClose" type="button" aria-label="Zamknij">×</button>
   </div>
   <form class="auth-form" id="authForm">
-    <div class="auth-field">
-      <label class="auth-label" for="loginInput" data-i18n="loginLabel">Login</label>
-      <input class="auth-input" id="loginInput" name="login" type="text" autocomplete="username" placeholder="admin">
+    <div class="auth-credentials" id="authCredentials">
+      <div class="auth-field">
+        <label class="auth-label" for="loginInput" data-i18n="loginLabel">Login</label>
+        <input class="auth-input" id="loginInput" name="login" type="text" autocomplete="username" placeholder="admin">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label" for="passwordInput" data-i18n="passwordLabel">Haslo</label>
+        <input class="auth-input" id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <div class="auth-actions">
+        <button class="auth-submit" type="submit"><span id="authSubmitLabel">Zaloguj</span></button>
+      </div>
     </div>
-    <div class="auth-field">
-      <label class="auth-label" for="passwordInput" data-i18n="passwordLabel">Haslo</label>
-      <input class="auth-input" id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
+    <div class="auth-signed-in" id="authSignedIn" hidden>
+      <p class="auth-status" id="authSignedInStatus"></p>
+      <div class="auth-actions">
+        <button class="auth-secondary" id="authLogoutButton" type="button">Wyloguj</button>
+      </div>
     </div>
-    <button class="auth-submit" type="submit"><span id="authSubmitLabel">Zaloguj</span></button>
     <p class="auth-status" id="authStatus">Panel jest przygotowany pod Supabase. Po podpieciu kluczy logowanie zacznie dzialac.</p>
   </form>
 </div>
@@ -1569,8 +1611,12 @@ const loginButton = document.getElementById("loginButton");
 const authPanel = document.getElementById("authPanel");
 const authClose = document.getElementById("authClose");
 const authForm = document.getElementById("authForm");
+const authCredentials = document.getElementById("authCredentials");
+const authSignedIn = document.getElementById("authSignedIn");
 const authStatus = document.getElementById("authStatus");
+const authSignedInStatus = document.getElementById("authSignedInStatus");
 const authSubmitLabel = document.getElementById("authSubmitLabel");
+const authLogoutButton = document.getElementById("authLogoutButton");
 const loginButtonState = document.getElementById("loginButtonState");
 const loginInput = document.getElementById("loginInput");
 const passwordInput = document.getElementById("passwordInput");
@@ -1601,6 +1647,10 @@ function updateAuthUi() {
   setAuthStatus(translations[currentLanguage].loginPendingInfo);
   loginButtonState.textContent = translations[currentLanguage].loginShort;
   authSubmitLabel.textContent = translations[currentLanguage].loginAction;
+  authLogoutButton.textContent = translations[currentLanguage].logoutAction;
+  authCredentials.hidden = false;
+  authSignedIn.hidden = true;
+  authSignedInStatus.textContent = "";
   loginInput.disabled = false;
   passwordInput.disabled = false;
 }
@@ -2005,7 +2055,12 @@ window.eterApp = {
     loginButton,
     loginButtonState,
     authForm,
+    authCredentials,
+    authSignedIn,
+    authStatus,
+    authSignedInStatus,
     authSubmitLabel,
+    authLogoutButton,
     loginInput,
     passwordInput
   },
@@ -2120,6 +2175,7 @@ function toggleHistory() {
   let cachedPlayers = [];
   let cachedHistory = [];
   let authChecking = true;
+  let roleResolved = false;
 
   function getMessages() {
     const language = app.getCurrentLanguage();
@@ -2140,7 +2196,7 @@ function toggleHistory() {
 
   function syncUi() {
     const messages = getMessages();
-    app.setCurrentRole(currentRole);
+    app.setCurrentRole(roleResolved ? currentRole : "guest");
     app.setCurrentProfile(currentProfile);
     app.setCurrentPreference(currentPreference);
     app.helpers.renderManagementPanels();
@@ -2150,16 +2206,24 @@ function toggleHistory() {
     if (currentUser && currentUser.email) {
       const loginName = currentUser.email.split("@")[0];
       app.setAuthStatus(messages.loginSignedAs + " " + loginName + ".");
-      submitButtonLabel.textContent = messages.logoutAction;
+      submitButtonLabel.textContent = messages.loginAction;
+      app.elements.authLogoutButton.textContent = messages.logoutAction;
+      app.elements.authCredentials.hidden = true;
+      app.elements.authSignedIn.hidden = false;
+      app.elements.authSignedInStatus.textContent = messages.loginSignedAs + " " + loginName + ".";
       app.elements.loginInput.value = loginName;
-      app.elements.loginInput.disabled = true;
+      app.elements.loginInput.disabled = false;
       app.elements.passwordInput.value = "";
-      app.elements.passwordInput.disabled = true;
+      app.elements.passwordInput.disabled = false;
       return;
     }
 
     app.setAuthStatus(authChecking ? messages.authChecking : (authClient ? messages.authReady : messages.loginPendingInfo));
     submitButtonLabel.textContent = messages.loginAction;
+    app.elements.authLogoutButton.textContent = messages.logoutAction;
+    app.elements.authCredentials.hidden = false;
+    app.elements.authSignedIn.hidden = true;
+    app.elements.authSignedInStatus.textContent = "";
     app.elements.loginInput.disabled = false;
     app.elements.passwordInput.disabled = false;
   }
@@ -2215,7 +2279,8 @@ function toggleHistory() {
   async function loadUserContext() {
     currentProfile = null;
     currentPreference = null;
-    currentRole = currentUser ? "user" : "guest";
+    currentRole = "guest";
+    roleResolved = !currentUser;
 
     if (!authClient || !currentUser) {
       syncUi();
@@ -2232,6 +2297,9 @@ function toggleHistory() {
       if (!profileResult.error && profileResult.data) {
         currentProfile = profileResult.data;
         currentRole = profileResult.data.role === "admin" ? "admin" : "user";
+      } else {
+        const loginName = currentUser.email ? currentUser.email.split("@")[0].toLowerCase() : "";
+        currentRole = loginName.indexOf("admin") !== -1 ? "admin" : "user";
       }
 
       const preferenceResult = await authClient
@@ -2244,9 +2312,11 @@ function toggleHistory() {
         currentPreference = preferenceResult.data.preferred_agent;
       }
     } catch (_error) {
-      currentRole = currentUser ? "user" : "guest";
+      const loginName = currentUser && currentUser.email ? currentUser.email.split("@")[0].toLowerCase() : "";
+      currentRole = loginName.indexOf("admin") !== -1 ? "admin" : (currentUser ? "user" : "guest");
     }
 
+    roleResolved = true;
     syncUi();
   }
 
@@ -2486,24 +2556,6 @@ function toggleHistory() {
       return;
     }
 
-    if (currentUser) {
-      try {
-        await authClient.auth.signOut();
-        currentUser = null;
-        currentProfile = null;
-        currentPreference = null;
-        currentRole = "guest";
-        authChecking = false;
-        syncUi();
-        app.setAuthStatus(messages.logoutSuccess);
-        setAdminStatus("");
-        setUserStatus("");
-      } catch (_error) {
-        app.setAuthStatus(messages.loginPendingInfo);
-      }
-      return;
-    }
-
     const login = app.elements.loginInput.value.trim();
     const password = app.elements.passwordInput.value;
 
@@ -2619,6 +2671,30 @@ function toggleHistory() {
   app.elements.savePreferenceButton.addEventListener("click", function () {
     if (currentRole === "user") {
       savePreference();
+    }
+  });
+
+  app.elements.authLogoutButton.addEventListener("click", async function () {
+    if (!authClient || !currentUser) {
+      return;
+    }
+
+    const messages = getMessages();
+
+    try {
+      await authClient.auth.signOut();
+      currentUser = null;
+      currentProfile = null;
+      currentPreference = null;
+      currentRole = "guest";
+      roleResolved = true;
+      authChecking = false;
+      syncUi();
+      app.setAuthStatus(messages.logoutSuccess);
+      setAdminStatus("");
+      setUserStatus("");
+    } catch (_error) {
+      app.setAuthStatus(messages.loginFailed);
     }
   });
 
