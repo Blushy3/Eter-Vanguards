@@ -925,63 +925,7 @@ const translations = {
     mapTitlePrefix: "Map",
     titleSubtitle: "Premier Team Dashboard",
     reserveBadge: "Reserve"
-  },
-  uk: {
-    infoTitle: "Інформація",
-    dateLabel: "Дата",
-    timeLabel: "Час",
-    matchesLabel: "Матчі",
-    mapLabel: "Мапа",
-    premierScore: "Прем'єрський бал",
-    scoreInfo: "Для виходу в плей-офф потрібен мінімум 500 прем'єрських балів",
-    teamTitle: "Команда",
-    historyTitle: "Історія",
-    expand: "Розгорнути",
-    collapse: "Згорнути",
-    usefulLinks: "Корисні посилання",
-    agentLink: "Агент",
-    statsLink: "Статистика",
-    themeLabel: "Тема",
-    themeDark: "Темна",
-    themeLight: "Світла",
-    languageLabel: "Мова",
-    refreshTitle: "Оновити сторінку",
-    refreshConfirmTitle: "Скинути налаштування",
-    refreshConfirmText: "Це скине збережені дані браузера для цієї сторінки та оновить її вигляд.",
-    cancelLabel: "Скасувати",
-    confirmRefresh: "Оновити",
-    mapTitlePrefix: "Мапа",
-    titleSubtitle: "Панель прем'єр-команди",
-    reserveBadge: "Резерв"
-  },
-  es: {
-    infoTitle: "Información",
-    dateLabel: "Fecha",
-    timeLabel: "Hora",
-    matchesLabel: "Partidos",
-    mapLabel: "Mapa",
-    premierScore: "Puntuación Premier",
-    scoreInfo: "Se requiere un mínimo de 500 puntos Premier para calificar a los playoffs",
-    teamTitle: "Equipo",
-    historyTitle: "Historial",
-    expand: "Expandir",
-    collapse: "Colapsar",
-    usefulLinks: "Enlaces útiles",
-    agentLink: "Agente",
-    statsLink: "Estadísticas",
-    themeLabel: "Tema",
-    themeDark: "Oscuro",
-    themeLight: "Claro",
-    languageLabel: "Idioma",
-    refreshTitle: "Actualizar página",
-    refreshConfirmTitle: "Restablecer configuración",
-    refreshConfirmText: "Esto restablecerá los datos guardados de esta página en el navegador y actualizará la vista.",
-    cancelLabel: "Cancelar",
-    confirmRefresh: "Actualizar",
-    mapTitlePrefix: "Mapa",
-    titleSubtitle: "Panel del Equipo Premier",
-    reserveBadge: "Reserva"
-  },
+  }
 };
 
 const players = [
@@ -1188,7 +1132,7 @@ themeToggle.addEventListener("click", () => {
 });
 
 languageToggle.addEventListener("click", () => {
-  const nextLanguage = currentLanguage === "pl" ? "en" : "pl" : "uk" : "es";
+  const nextLanguage = currentLanguage === "pl" ? "en" : "pl";
   applyLanguage(nextLanguage);
 });
 
