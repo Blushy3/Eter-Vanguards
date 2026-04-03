@@ -1041,15 +1041,7 @@ body.light-theme .player-name {
   </button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = "https://bhufgplssyhpkxtyfwwh.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_nDhdGaJApbYuGtTblHo2AQ_AbVlT2G7";
-const LOGIN_EMAIL_DOMAIN = "eter.local";
-const supabase = window.supabase && window.supabase.createClient
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
-  : null;
-
 const translations = {
   pl: {
     infoTitle: "Info",
@@ -1084,7 +1076,7 @@ const translations = {
     loginLabel: "Login",
     passwordLabel: "Haslo",
     loginAction: "Zaloguj",
-    loginPendingInfo: "Utworz konta w Supabase i loguj sie loginem oraz haslem.",
+    loginPendingInfo: "Panel logowania jest przygotowany. Podpiecie Supabase zrobimy w kolejnym kroku.",
     loginSigningIn: "Logowanie...",
     loginSuccess: "Zalogowano pomyslnie.",
     loginFailed: "Nie udalo sie zalogowac. Sprawdz login i haslo.",
@@ -1092,8 +1084,7 @@ const translations = {
     loginSignedAs: "Zalogowano jako",
     logoutAction: "Wyloguj",
     logoutSuccess: "Wylogowano.",
-    authReady: "Polaczono z Supabase.",
-    authUnavailable: "Logowanie jest chwilowo niedostepne. Reszta strony dziala normalnie."
+    authReady: "Polaczono z Supabase."
   },
   en: {
     infoTitle: "Info",
@@ -1128,7 +1119,7 @@ const translations = {
     loginLabel: "Login",
     passwordLabel: "Password",
     loginAction: "Sign in",
-    loginPendingInfo: "Create accounts in Supabase and sign in with your login and password.",
+    loginPendingInfo: "The login panel is ready. We will connect Supabase in the next step.",
     loginSigningIn: "Signing in...",
     loginSuccess: "Signed in successfully.",
     loginFailed: "Could not sign in. Check your login and password.",
@@ -1136,8 +1127,7 @@ const translations = {
     loginSignedAs: "Signed in as",
     logoutAction: "Sign out",
     logoutSuccess: "Signed out.",
-    authReady: "Connected to Supabase.",
-    authUnavailable: "Login is temporarily unavailable. The rest of the site still works normally."
+    authReady: "Connected to Supabase."
   }
 };
 
@@ -1247,79 +1237,23 @@ const pageTitle = document.getElementById("pageTitle");
 const settingsStorageKeys = ["eter-theme", "eter-language", "eter-dashboard-layout-v1"];
 let currentLanguage = localStorage.getItem("eter-language") || "pl";
 let currentMapName = null;
-let authUser = null;
-
-function normalizeLoginToEmail(login) {
-  return `${login.trim().toLowerCase()}@${LOGIN_EMAIL_DOMAIN}`;
-}
 
 function setAuthStatus(message) {
   authStatus.textContent = message;
 }
 
 function updateAuthUi() {
-  if (authUser) {
-    const loginName = (authUser.email || "").split("@")[0] || authUser.email || "user";
-    setAuthStatus(`${translations[currentLanguage].loginSignedAs} ${loginName}.`);
-    loginButton.querySelector("[data-i18n='loginShort']").textContent = translations[currentLanguage].logoutAction;
-    authForm.querySelector("[data-i18n='loginAction']").textContent = translations[currentLanguage].logoutAction;
-    loginInput.value = loginName;
-    loginInput.disabled = true;
-    passwordInput.value = "";
-    passwordInput.disabled = true;
-  } else {
-    setAuthStatus(supabase ? translations[currentLanguage].authReady : translations[currentLanguage].authUnavailable);
-    loginButton.querySelector("[data-i18n='loginShort']").textContent = translations[currentLanguage].loginShort;
-    authForm.querySelector("[data-i18n='loginAction']").textContent = translations[currentLanguage].loginAction;
-    loginInput.disabled = false;
-    passwordInput.disabled = false;
-    loginInput.value = "";
-    passwordInput.value = "";
-  }
-}
-
-async function restoreAuthState() {
-  if (!supabase) {
-    updateAuthUi();
+  const authSync = window.eterSyncAuthUi;
+  if (typeof authSync === "function") {
+    authSync();
     return;
   }
 
-  const { data, error } = await supabase.auth.getSession();
-  if (!error) {
-    authUser = data && data.session ? data.session.user : null;
-    updateAuthUi();
-  }
-}
-
-async function signInWithLogin(login, password) {
-  if (!supabase) {
-    return {
-      data: null,
-      error: { message: translations[currentLanguage].authUnavailable }
-    };
-  }
-
-  return supabase.auth.signInWithPassword({
-    email: normalizeLoginToEmail(login),
-    password
-  });
-}
-
-async function signOutUser() {
-  if (!supabase) {
-    setAuthStatus(translations[currentLanguage].authUnavailable);
-    return;
-  }
-
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    setAuthStatus(error.message);
-    return;
-  }
-
-  authUser = null;
-  updateAuthUi();
-  setAuthStatus(translations[currentLanguage].logoutSuccess);
+  setAuthStatus(translations[currentLanguage].loginPendingInfo);
+  loginButton.querySelector("[data-i18n='loginShort']").textContent = translations[currentLanguage].loginShort;
+  authForm.querySelector("[data-i18n='loginAction']").textContent = translations[currentLanguage].loginAction;
+  loginInput.disabled = false;
+  passwordInput.disabled = false;
 }
 
 function hideAuthPanel() {
@@ -1446,38 +1380,14 @@ languageToggle.addEventListener("click", () => {
 
 loginButton.addEventListener("click", showAuthPanel);
 authClose.addEventListener("click", hideAuthPanel);
-authForm.addEventListener("submit", async (event) => {
+authForm.addEventListener("submit", (event) => {
+  if (typeof window.eterHandleAuthSubmit === "function") {
+    window.eterHandleAuthSubmit(event);
+    return;
+  }
+
   event.preventDefault();
-
-  if (authUser) {
-    await signOutUser();
-    return;
-  }
-
-  const login = loginInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!login || !password) {
-    setAuthStatus(translations[currentLanguage].loginInvalid);
-    return;
-  }
-
-  setAuthStatus(translations[currentLanguage].loginSigningIn);
-  const { data, error } = await signInWithLogin(login, password);
-
-  if (error) {
-    setAuthStatus(error.message || translations[currentLanguage].loginFailed);
-    return;
-  }
-
-  authUser = data && data.user
-    ? data.user
-    : data && data.session
-      ? data.session.user
-      : null;
-  updateAuthUi();
-  setAuthStatus(translations[currentLanguage].loginSuccess);
-  hideAuthPanel();
+  setAuthStatus(translations[currentLanguage].loginPendingInfo);
 });
 
 refreshButton.addEventListener("click", showRefreshConfirm);
@@ -1487,15 +1397,24 @@ refreshConfirmBtn.addEventListener("click", () => {
   window.location.reload(true);
 });
 
-restoreAuthState();
-if (supabase) {
-  supabase.auth.onAuthStateChange((_event, session) => {
-    authUser = session ? session.user : null;
-    updateAuthUi();
-  });
-}
-
+updateAuthUi();
 renderTeam();
+window.eterApp = {
+  translations,
+  getCurrentLanguage: function () {
+    return currentLanguage;
+  },
+  setAuthStatus,
+  updateAuthUi,
+  hideAuthPanel,
+  elements: {
+    loginButton,
+    authForm,
+    loginInput,
+    passwordInput
+  }
+};
+
 window.addEventListener("click", (e) => {
   const mapModal = document.getElementById('mapModal');
   if (mapModal.classList.contains('active')) {
@@ -1576,6 +1495,144 @@ function toggleHistory() {
 
   updateHistoryToggleLabel();
 }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  const SUPABASE_URL = "https://bhufgplssyhpkxtyfwwh.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_nDhdGaJApbYuGtTblHo2AQ_AbVlT2G7";
+  const LOGIN_EMAIL_DOMAIN = "eter.local";
+  const app = window.eterApp;
+
+  if (!app) {
+    return;
+  }
+
+  const loginButtonLabel = app.elements.loginButton.querySelector("[data-i18n='loginShort']");
+  const submitButtonLabel = app.elements.authForm.querySelector("[data-i18n='loginAction']");
+  let authClient = null;
+  let currentUser = null;
+
+  function getMessages() {
+    const language = app.getCurrentLanguage();
+    return app.translations[language] || app.translations.pl;
+  }
+
+  function normalizeLoginToEmail(login) {
+    return login.trim().toLowerCase() + "@" + LOGIN_EMAIL_DOMAIN;
+  }
+
+  function syncUi() {
+    const messages = getMessages();
+
+    if (currentUser && currentUser.email) {
+      const loginName = currentUser.email.split("@")[0];
+      app.setAuthStatus(messages.loginSignedAs + " " + loginName + ".");
+      loginButtonLabel.textContent = messages.logoutAction;
+      submitButtonLabel.textContent = messages.logoutAction;
+      app.elements.loginInput.value = loginName;
+      app.elements.loginInput.disabled = true;
+      app.elements.passwordInput.value = "";
+      app.elements.passwordInput.disabled = true;
+      return;
+    }
+
+    app.setAuthStatus(authClient ? messages.authReady : messages.loginPendingInfo);
+    loginButtonLabel.textContent = messages.loginShort;
+    submitButtonLabel.textContent = messages.loginAction;
+    app.elements.loginInput.disabled = false;
+    app.elements.passwordInput.disabled = false;
+  }
+
+  async function restoreSession() {
+    if (!authClient) {
+      syncUi();
+      return;
+    }
+
+    try {
+      const result = await authClient.auth.getSession();
+      currentUser = result && result.data && result.data.session ? result.data.session.user : null;
+    } catch (_error) {
+      currentUser = null;
+    }
+
+    syncUi();
+  }
+
+  window.eterSyncAuthUi = syncUi;
+  window.eterHandleAuthSubmit = async function (event) {
+    event.preventDefault();
+    const messages = getMessages();
+
+    if (!authClient) {
+      app.setAuthStatus(messages.loginPendingInfo);
+      return;
+    }
+
+    if (currentUser) {
+      try {
+        await authClient.auth.signOut();
+        currentUser = null;
+        syncUi();
+        app.setAuthStatus(messages.logoutSuccess);
+      } catch (_error) {
+        app.setAuthStatus(messages.loginPendingInfo);
+      }
+      return;
+    }
+
+    const login = app.elements.loginInput.value.trim();
+    const password = app.elements.passwordInput.value;
+
+    if (!login || !password) {
+      app.setAuthStatus(messages.loginInvalid);
+      return;
+    }
+
+    app.setAuthStatus(messages.loginSigningIn);
+
+    try {
+      const result = await authClient.auth.signInWithPassword({
+        email: normalizeLoginToEmail(login),
+        password: password
+      });
+
+      if (result.error) {
+        app.setAuthStatus(result.error.message || messages.loginFailed);
+        return;
+      }
+
+      currentUser = result.data && result.data.user
+        ? result.data.user
+        : result.data && result.data.session
+          ? result.data.session.user
+          : null;
+      syncUi();
+      app.setAuthStatus(messages.loginSuccess);
+      app.hideAuthPanel();
+    } catch (_error) {
+      app.setAuthStatus(messages.loginFailed);
+    }
+  };
+
+  try {
+    if (window.supabase && window.supabase.createClient) {
+      authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+      if (authClient && authClient.auth && authClient.auth.onAuthStateChange) {
+        authClient.auth.onAuthStateChange(function (_event, session) {
+          currentUser = session ? session.user : null;
+          syncUi();
+        });
+      }
+    }
+  } catch (_error) {
+    authClient = null;
+  }
+
+  restoreSession();
+})();
 </script>
 
 </body>
