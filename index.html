@@ -1046,7 +1046,7 @@ body.light-theme .player-name {
 const SUPABASE_URL = "https://bhufgplssyhpkxtyfwwh.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_nDhdGaJApbYuGtTblHo2AQ_AbVlT2G7";
 const LOGIN_EMAIL_DOMAIN = "eter.local";
-const supabase = window.supabase?.createClient
+const supabase = window.supabase && window.supabase.createClient
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
   : null;
 
@@ -1286,7 +1286,7 @@ async function restoreAuthState() {
 
   const { data, error } = await supabase.auth.getSession();
   if (!error) {
-    authUser = data.session?.user || null;
+    authUser = data && data.session ? data.session.user : null;
     updateAuthUi();
   }
 }
@@ -1470,7 +1470,11 @@ authForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  authUser = data.user || data.session?.user || null;
+  authUser = data && data.user
+    ? data.user
+    : data && data.session
+      ? data.session.user
+      : null;
   updateAuthUi();
   setAuthStatus(translations[currentLanguage].loginSuccess);
   hideAuthPanel();
@@ -1486,7 +1490,7 @@ refreshConfirmBtn.addEventListener("click", () => {
 restoreAuthState();
 if (supabase) {
   supabase.auth.onAuthStateChange((_event, session) => {
-    authUser = session?.user || null;
+    authUser = session ? session.user : null;
     updateAuthUi();
   });
 }
