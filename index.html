@@ -1970,7 +1970,7 @@ function renderTeam() {
   team.innerHTML = "";
 
   players.forEach((p) => {
-    const isReserve = Boolean(p.is_reserve) || p.name === "Future";
+    const isReserve = Boolean(p.is_reserve);
     const el = document.createElement("div");
     el.className = "player";
     el.innerHTML = `
@@ -2255,6 +2255,7 @@ function toggleHistory() {
   const SESSION_ACTIVE_KEY = "eter-session-active";
   const ROLE_HINT_KEY = "eter-role-hint";
   const SUPABASE_STORAGE_KEY = "sb-bhufgplssyhpkxtyfwwh-auth-token";
+  const SAVE_TIMEOUT_MS = 15000;
   const app = window.eterApp;
 
   if (!app) {
@@ -2627,16 +2628,14 @@ function toggleHistory() {
       let result = await withTimeout(authClient
         .from("site_settings")
         .upsert(payload)
-        .select()
-        .single(), 8000);
+        .select(), SAVE_TIMEOUT_MS);
 
       if (result.error && String(result.error.message || "").indexOf("score_info") !== -1) {
         delete payload.score_info;
         result = await withTimeout(authClient
           .from("site_settings")
           .upsert(payload)
-          .select()
-          .single(), 8000);
+          .select(), SAVE_TIMEOUT_MS);
       }
 
       if (result.error) {
@@ -2645,11 +2644,15 @@ function toggleHistory() {
         return;
       }
 
+      const savedSettings = result.data && result.data[0]
+        ? result.data[0]
+        : Object.assign({}, siteSettings, payload);
+
       if (payload.score_info !== undefined) {
-        result.data.score_info = app.elements.adminScoreInfo.value.trim();
+        savedSettings.score_info = app.elements.adminScoreInfo.value.trim();
       }
-      cachedSiteSettings = result.data;
-      app.setSiteSettings(result.data);
+      cachedSiteSettings = savedSettings;
+      app.setSiteSettings(savedSettings);
       setAdminStatus(messages.saveSuccess);
       setButtonFeedback(app.elements.saveSettingsButton, "success", messages.savedLabel);
     } catch (_error) {
@@ -2665,6 +2668,7 @@ function toggleHistory() {
 
     try {
       const editedPlayers = readPlayerEditors();
+      const savedPlayers = [];
 
       for (let i = 0; i < editedPlayers.length; i += 1) {
         const player = editedPlayers[i];
@@ -2679,13 +2683,18 @@ function toggleHistory() {
             })
             .eq("id", player.id)
             .select()
-            .single(), 8000);
+            .single(), SAVE_TIMEOUT_MS);
         } else {
+          const insertPayload = {
+            player_name: player.player_name,
+            current_agent: player.current_agent,
+            is_reserve: player.is_reserve
+          };
           result = await withTimeout(authClient
             .from("player_assignments")
-            .insert(player)
+            .insert(insertPayload)
             .select()
-            .single(), 8000);
+            .single(), SAVE_TIMEOUT_MS);
         }
 
         if (result.error) {
@@ -2693,16 +2702,18 @@ function toggleHistory() {
           setButtonFeedback(app.elements.savePlayersButton, "error", messages.saveErrorLabel);
           return;
         }
+
+        if (result.data) {
+          savedPlayers.push({
+            id: result.data.id,
+            name: result.data.player_name,
+            agent: result.data.current_agent || "?",
+            is_reserve: result.data.is_reserve
+          });
+        }
       }
 
-      cachedPlayers = editedPlayers.map(function (player) {
-        return {
-          id: player.id,
-          name: player.player_name,
-          agent: player.current_agent,
-          is_reserve: player.is_reserve
-        };
-      });
+      cachedPlayers = savedPlayers;
       app.setPlayers(cachedPlayers);
       fetchPublicData().catch(function () {});
       setAdminStatus(messages.saveSuccess);
@@ -2720,6 +2731,7 @@ function toggleHistory() {
 
     try {
       const editedHistory = readHistoryEditors();
+      const savedHistory = [];
       const existingIds = cachedHistory.filter(function (item) { return item.id != null; }).map(function (item) { return item.id; });
       const editedIds = editedHistory.filter(function (item) { return item.id != null; }).map(function (item) { return item.id; });
       const idsToDelete = existingIds.filter(function (id) { return editedIds.indexOf(id) === -1; });
@@ -2728,7 +2740,7 @@ function toggleHistory() {
         const deleteResult = await withTimeout(authClient
           .from("match_history")
           .delete()
-          .in("id", idsToDelete), 8000);
+          .in("id", idsToDelete), SAVE_TIMEOUT_MS);
 
         if (deleteResult.error) {
           setAdminStatus(deleteResult.error.message || messages.saveFailed);
@@ -2754,13 +2766,21 @@ function toggleHistory() {
             })
             .eq("id", match.id)
             .select()
-            .single(), 8000);
+            .single(), SAVE_TIMEOUT_MS);
         } else {
+          const insertPayload = {
+            map_name: match.map_name,
+            opponent: match.opponent,
+            score: match.score,
+            points: match.points,
+            result: match.result,
+            sort_order: match.sort_order
+          };
           result = await withTimeout(authClient
             .from("match_history")
-            .insert(match)
+            .insert(insertPayload)
             .select()
-            .single(), 8000);
+            .single(), SAVE_TIMEOUT_MS);
         }
 
         if (result.error) {
@@ -2768,9 +2788,13 @@ function toggleHistory() {
           setButtonFeedback(app.elements.saveHistoryButton, "error", messages.saveErrorLabel);
           return;
         }
+
+        if (result.data) {
+          savedHistory.push(result.data);
+        }
       }
 
-      cachedHistory = editedHistory.slice();
+      cachedHistory = savedHistory;
       app.setHistoryMatches(cachedHistory);
       fetchPublicData().catch(function () {});
       setAdminStatus(messages.saveSuccess);
@@ -2800,7 +2824,7 @@ function toggleHistory() {
           preferred_agent: app.elements.preferredAgentSelect.value
         }, { onConflict: "user_id" })
         .select()
-        .single(), 8000);
+        .single(), SAVE_TIMEOUT_MS);
 
       if (result.error) {
         setUserStatus(result.error.message || messages.saveFailed);
