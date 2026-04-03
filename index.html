@@ -1330,6 +1330,7 @@ const translations = {
     logoutAction: "Wyloguj",
     logoutSuccess: "Wylogowano.",
     authReady: "Polaczono z Supabase.",
+    authChecking: "Sprawdzam sesje...",
     managementTitle: "Panel zarzadzania",
     managementGuestSubtitle: "Zaloguj sie, aby zarzadzac danymi strony lub zapisac swoja preferowana postac.",
     managementAdminSubtitle: "Masz uprawnienia administratora. Tutaj edytujesz dane widoczne dla wszystkich.",
@@ -1399,6 +1400,7 @@ const translations = {
     logoutAction: "Sign out",
     logoutSuccess: "Signed out.",
     authReady: "Connected to Supabase.",
+    authChecking: "Checking session...",
     managementTitle: "Management",
     managementGuestSubtitle: "Sign in to manage the site data or save your preferred agent.",
     managementAdminSubtitle: "You have administrator access. Edit the data visible to everyone here.",
@@ -2113,6 +2115,7 @@ function toggleHistory() {
   let cachedSiteSettings = null;
   let cachedPlayers = [];
   let cachedHistory = [];
+  let authChecking = true;
 
   function getMessages() {
     const language = app.getCurrentLanguage();
@@ -2138,10 +2141,11 @@ function toggleHistory() {
     app.setCurrentPreference(currentPreference);
     app.helpers.renderManagementPanels();
 
+    loginButtonLabel.textContent = messages.loginShort;
+
     if (currentUser && currentUser.email) {
       const loginName = currentUser.email.split("@")[0];
       app.setAuthStatus(messages.loginSignedAs + " " + loginName + ".");
-      loginButtonLabel.textContent = messages.logoutAction;
       submitButtonLabel.textContent = messages.logoutAction;
       app.elements.loginInput.value = loginName;
       app.elements.loginInput.disabled = true;
@@ -2150,8 +2154,7 @@ function toggleHistory() {
       return;
     }
 
-    app.setAuthStatus(authClient ? messages.authReady : messages.loginPendingInfo);
-    loginButtonLabel.textContent = messages.loginShort;
+    app.setAuthStatus(authChecking ? messages.authChecking : (authClient ? messages.authReady : messages.loginPendingInfo));
     submitButtonLabel.textContent = messages.loginAction;
     app.elements.loginInput.disabled = false;
     app.elements.passwordInput.disabled = false;
@@ -2245,6 +2248,7 @@ function toggleHistory() {
 
   async function restoreSession() {
     if (!authClient) {
+      authChecking = false;
       syncUi();
       return;
     }
@@ -2258,6 +2262,7 @@ function toggleHistory() {
 
     await fetchPublicData();
     await loadUserContext();
+    authChecking = false;
     syncUi();
   }
 
@@ -2461,30 +2466,7 @@ function toggleHistory() {
   }
 
   window.eterSyncAuthUi = syncUi;
-  window.eterHandleLoginButtonClick = async function (event) {
-    if (event) {
-      event.stopPropagation();
-    }
-
-    if (currentUser) {
-      const messages = getMessages();
-
-      try {
-        await authClient.auth.signOut();
-        currentUser = null;
-        currentProfile = null;
-        currentPreference = null;
-        currentRole = "guest";
-        syncUi();
-        app.setAuthStatus(messages.logoutSuccess);
-        setAdminStatus("");
-        setUserStatus("");
-      } catch (_error) {
-        app.setAuthStatus(messages.loginFailed);
-      }
-      return;
-    }
-
+  window.eterHandleLoginButtonClick = function (event) {
     if (typeof window.showAuthPanel === "function") {
       window.showAuthPanel(event);
     }
@@ -2505,6 +2487,7 @@ function toggleHistory() {
         currentProfile = null;
         currentPreference = null;
         currentRole = "guest";
+        authChecking = false;
         syncUi();
         app.setAuthStatus(messages.logoutSuccess);
         setAdminStatus("");
@@ -2551,12 +2534,13 @@ function toggleHistory() {
   };
 
   function attachAuthListeners() {
-    if (authClient && authClient.auth && authClient.auth.onAuthStateChange) {
-      authClient.auth.onAuthStateChange(async function (_event, session) {
-        currentUser = session ? session.user : null;
-        await loadUserContext();
-        syncUi();
-      });
+      if (authClient && authClient.auth && authClient.auth.onAuthStateChange) {
+        authClient.auth.onAuthStateChange(async function (_event, session) {
+          currentUser = session ? session.user : null;
+          authChecking = false;
+          await loadUserContext();
+          syncUi();
+        });
     }
   }
 
