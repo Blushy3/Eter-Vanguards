@@ -471,6 +471,8 @@ let pendingProfileTheme='prof-default';
 let pendingFrameStyle='none';
 let socialLinks=[];
 let currentLang=localStorage.getItem('eter-language')||'pl';
+const params=new URLSearchParams(location.search);
+viewedUsername=params.get('user');
 const authReady=initEterAuth({
   loginUsernameId:'loginUsername',
   loginPasswordId:'loginPassword',
@@ -488,10 +490,6 @@ const authReady=initEterAuth({
 });
 if(false){
 const u2e={blushyk:'blushyk@eter.gg',tengrubytyp:'tengrubytyp@eter.gg',ratatuii:'ratatuii@eter.gg',licz1:'licz1@eter.gg',mdzer:'mdzer@eter.gg',future:'future@eter.gg'};
-
-// Get username from URL
-const params=new URLSearchParams(location.search);
-viewedUsername=params.get('user');
 
 async function updateAuthUI(user,username,avatarUrl){
   sessionUser=user||null;
