@@ -463,7 +463,7 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 import{createClient}from'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 const SB_URL='https://zllishknfqylpommgnew.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsbGlzaGtuZnF5bHBvbW1nbmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzOTk4MDksImV4cCI6MjA5MDk3NTgwOX0.Tm7ZGifcT5Y2kBJxaTUK_ASQruVcpHrM9UDMtmQiT4A';
-const supabase=createClient(SB_URL,SB_KEY,{auth:{persistSession:true,storageKey:'eter-session',storage:localStorage,autoRefreshToken:true,detectSessionInUrl:false}});
+const supabase=createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
 
 let viewedUsername=null;
 let viewedProfile=null;
@@ -502,7 +502,13 @@ async function updateAuthUI(user,username,avatarUrl){
 }
 
 async function restoreAuthSession(){
-  const { data: { session } } = await supabase.auth.getSession();
+  let session=null;
+  const current=await supabase.auth.getSession();
+  session=current&&current.data?current.data.session:null;
+  if(!session){
+    const refreshed=await supabase.auth.refreshSession().catch(()=>null);
+    session=refreshed&&refreshed.data?refreshed.data.session:null;
+  }
   if(session){
     const { data: prof } = await supabase.from('profiles').select('username,avatar_url').eq('id',session.user.id).single();
     await updateAuthUI(session.user,prof?.username||session.user.email,prof?.avatar_url||null);
@@ -523,6 +529,7 @@ window.handleLogin=async function(){
 
   const { error } = await supabase.auth.signInWithPassword({ email, password:p });
   if(error){err.textContent='Błędne hasło lub login.';btn.disabled=false;btn.textContent='Zaloguj się';return;}
+  btn.disabled=false;
   closeLoginModal();
 };
 
@@ -542,8 +549,10 @@ supabase.auth.onAuthStateChange(async(_,session)=>{
 });
 
 async function init(){
-  const{data:{session}}=await supabase.auth.getSession();
-  sessionUser=session?.user||null;
+  if(!sessionUser){
+    const{data:{session}}=await supabase.auth.getSession();
+    sessionUser=session?.user||null;
+  }
 
   if(!viewedUsername){
     // Własny profil bez ?user= — pobierz z sesji
@@ -833,8 +842,12 @@ function applyLang(lang){
 document.getElementById('languageToggle').addEventListener('click',()=>applyLang(currentLang==='pl'?'en':'pl'));
 applyLang(currentLang);
 
-restoreAuthSession();
-init();
+async function bootstrap(){
+  await restoreAuthSession();
+  await init();
+}
+
+bootstrap();
 </script>
 </body>
 </html>
