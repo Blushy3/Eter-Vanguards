@@ -322,10 +322,9 @@ body.light-theme .player-name{font-weight:600}
 </div>
 
 <script type="module">
-import { supabase, initEterAuth } from './auth.js';
+import { supabase } from './supabase-client.js';
 
 const GALLERY_LIMIT=6;
-let currentUser=null,currentUsername=null,currentUserId=null;
 let galleryAll=[];
 let galleryExpanded=false;
 let currentLang=localStorage.getItem('eter-language')||'pl';
@@ -418,24 +417,91 @@ supabase.auth.onAuthStateChange(async(_,session)=>{
 });
 }
 
-const authReady=initEterAuth({
-  loginUsernameId:'loginUsername',
-  loginPasswordId:'loginPassword',
-  rememberMeId:'rememberMe',
-  loginBtnId:'loginBtn',
-  loginErrorId:'loginError',
-  loginAvatarId:'loginAvatar',
-  loginActionValueId:'loginActionValue',
-  dropdownUsernameId:'dropdownUsername',
-  profileLinkId:'profileLink',
-  onAuthStateResolved:async(authState)=>{
-    currentUser=authState.user;
-    currentUsername=authState.username;
-    currentUserId=authState.user?authState.user.id:null;
-    document.getElementById('galleryUploadWrap').style.display=authState.user?'block':'none';
-    await loadGallery();
+const UPLOAD_ACCESS_KEY='eter-upload-access';
+let uploadAccess=readUploadAccess();
+let pendingUploadFile=null;
+
+function readUploadAccess(){
+  try{return JSON.parse(sessionStorage.getItem(UPLOAD_ACCESS_KEY)||'null');}
+  catch{return null;}
+}
+function saveUploadAccess(payload){
+  uploadAccess=payload;
+  sessionStorage.setItem(UPLOAD_ACCESS_KEY,JSON.stringify(payload));
+}
+function clearUploadAccess(){
+  uploadAccess=null;
+  sessionStorage.removeItem(UPLOAD_ACCESS_KEY);
+}
+function updateAccessUI(){
+  const avatar=document.getElementById('loginAvatar');
+  const value=document.getElementById('loginActionValue');
+  const dropdown=document.getElementById('dropdownUsername');
+  const profileLink=document.getElementById('profileLink');
+  const labels=document.querySelectorAll('#loginModal .login-label');
+  const remember=document.querySelector('.login-remember');
+  document.querySelector('#loginModal .modal-header h3').textContent='Kod dostepu';
+  document.querySelector('#loginModal .login-title').textContent='Dostep do galerii';
+  if(labels[0])labels[0].textContent='Nick';
+  if(labels[1])labels[1].textContent='Kod';
+  if(remember)remember.style.display='none';
+  document.querySelector('.login-action-label').textContent='Dostep';
+  document.querySelector('#profileDropdown .profile-dropdown-name span').textContent='Odblokowano dla';
+  document.querySelector('#profileDropdown .logout').textContent='Wyczysc dostep';
+  document.getElementById('loginBtn').textContent='Odblokuj';
+  document.getElementById('galleryEmpty').innerHTML='<div class="gallery-empty-icon">📷</div><div>Galeria jest pusta.<br>Wpisz nick i kod, aby dodać pierwszą grafikę.</div>';
+  document.getElementById('galleryUploadWrap').style.display='block';
+  if(uploadAccess?.username){
+    value.textContent=uploadAccess.username;
+    dropdown.textContent=uploadAccess.username;
+    profileLink.href=`profil.html?user=${encodeURIComponent(uploadAccess.username)}`;
+    if(uploadAccess.avatarUrl){avatar.innerHTML=`<img src="${uploadAccess.avatarUrl}" alt="${uploadAccess.username}">`;}
+    else{avatar.textContent=uploadAccess.username.charAt(0).toUpperCase();}
+  }else{
+    value.textContent='Kod';
+    dropdown.textContent='brak';
+    profileLink.href='profil.html';
+    avatar.textContent='#';
+    avatar.innerHTML='#';
   }
-});
+}
+async function verifyCode(username,code){
+  const { data, error } = await supabase.rpc('verify_profile_code',{ p_username:username, p_code:code });
+  if(error)throw error;
+  return Array.isArray(data)&&data.length?data[0]:null;
+}
+window.handleLogin=async function(){
+  const username=document.getElementById('loginUsername').value.trim();
+  const code=document.getElementById('loginPassword').value.trim();
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('loginError');
+  err.textContent='';
+  if(!username||!code){err.textContent='Wpisz nick i kod.';return;}
+  btn.disabled=true;btn.textContent='Sprawdzanie...';
+  try{
+    const profile=await verifyCode(username,code);
+    if(!profile){err.textContent='Niepoprawny nick albo kod.';return;}
+    saveUploadAccess({username:profile.username,code,avatarUrl:profile.avatar_url||null});
+    updateAccessUI();
+    closeLoginModal();
+    if(pendingUploadFile){
+      const file=pendingUploadFile;
+      pendingUploadFile=null;
+      await doUpload(file);
+    }
+  }catch(error){
+    err.textContent='Blad dostepu: '+error.message;
+  }finally{
+    btn.disabled=false;
+    btn.textContent='Odblokuj';
+  }
+};
+window.handleLogout=function(){
+  pendingUploadFile=null;
+  document.getElementById('profileDropdown').classList.remove('active');
+  clearUploadAccess();
+  updateAccessUI();
+};
 
 // ---- GALLERY ----
 function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});}
@@ -492,23 +558,33 @@ const uploadArea=document.getElementById('uploadArea');
 const fileInput=document.getElementById('galleryFileInput');
 uploadArea.addEventListener('dragover',e=>{e.preventDefault();uploadArea.classList.add('drag-over');});
 uploadArea.addEventListener('dragleave',()=>uploadArea.classList.remove('drag-over'));
-uploadArea.addEventListener('drop',e=>{e.preventDefault();uploadArea.classList.remove('drag-over');if(e.dataTransfer.files[0])doUpload(e.dataTransfer.files[0]);});
-fileInput.addEventListener('change',()=>{if(fileInput.files[0])doUpload(fileInput.files[0]);});
+uploadArea.addEventListener('drop',e=>{e.preventDefault();uploadArea.classList.remove('drag-over');if(e.dataTransfer.files[0])requestUpload(e.dataTransfer.files[0]);});
+uploadArea.addEventListener('click',()=>{if(uploadAccess){fileInput.click();}else{openCodeModal();}});
+fileInput.addEventListener('change',()=>{if(fileInput.files[0])requestUpload(fileInput.files[0]);});
+
+function requestUpload(file){
+  if(!uploadAccess){
+    pendingUploadFile=file;
+    openCodeModal();
+    return;
+  }
+  doUpload(file);
+}
 
 async function doUpload(file){
-  if(!currentUser)return;
+  if(!uploadAccess?.username||!uploadAccess?.code)return;
   if(file.size>5*1024*1024){alert('Plik za duży! Maks. 5 MB.');return;}
   const prog=document.getElementById('uploadProgress');
   const bar=document.getElementById('uploadBar');
   const lbl=document.getElementById('uploadLabel');
   prog.classList.add('visible');bar.style.width='20%';lbl.textContent='Wysyłanie...';
   const ext=file.name.split('.').pop();
-  const fname=`${currentUser.id}_${Date.now()}.${ext}`;
+  const fname=`gallery_${uploadAccess.username}_${Date.now()}.${ext}`;
   const{error:se}=await supabase.storage.from('EterGallery').upload(fname,file,{cacheControl:'3600',upsert:false});
   if(se){lbl.textContent='Błąd: '+se.message;bar.style.background='var(--danger)';return;}
   bar.style.width='70%';
   const{data:ud}=supabase.storage.from('EterGallery').getPublicUrl(fname);
-  const{error:de}=await supabase.from('gallery').insert({user_id:currentUser.id,username:currentUsername,image_url:ud.publicUrl});
+  const{error:de}=await supabase.rpc('create_gallery_item_by_code',{p_username:uploadAccess.username,p_code:uploadAccess.code,p_image_url:ud.publicUrl});
   if(de){lbl.textContent='Błąd zapisu: '+de.message;return;}
   bar.style.width='100%';lbl.textContent='Dodano! ✅';fileInput.value='';
   setTimeout(()=>{prog.classList.remove('visible');bar.style.width='0%';bar.style.background='';lbl.textContent='Wysyłanie...';},2000);
@@ -529,16 +605,24 @@ const loginToggle=document.getElementById('loginToggle');
 const refreshButton=document.getElementById('refreshButton');
 
 function closeAllPopups(){refreshConfirm.classList.remove('active');profileDropdown.classList.remove('active');document.getElementById('menu').classList.remove('active');}
+function openCodeModal(prefill=''){
+  closeAllPopups();
+  blurOverlay.classList.add('active');
+  loginModal.classList.add('active');
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginUsername').value=prefill||uploadAccess?.username||'';
+  document.getElementById('loginPassword').value='';
+}
 window.closeLoginModal=function(){blurOverlay.classList.remove('active');loginModal.classList.remove('active');document.getElementById('loginError').textContent='';};
 window.hideRefreshConfirm=function(){refreshConfirm.classList.remove('active');};
 
 loginToggle.addEventListener('click',e=>{
   e.stopPropagation();
-  if(currentUser){closeAllPopups();profileDropdown.classList.toggle('active');}
-  else{closeAllPopups();blurOverlay.classList.add('active');loginModal.classList.add('active');}
+  if(uploadAccess){closeAllPopups();profileDropdown.classList.toggle('active');}
+  else{openCodeModal();}
 });
 refreshButton.addEventListener('click',e=>{e.stopPropagation();closeAllPopups();refreshConfirm.classList.add('active');});
-document.getElementById('refreshConfirmBtn').addEventListener('click',()=>{['eter-theme','eter-language'].forEach(k=>localStorage.removeItem(k));location.reload(true);});
+document.getElementById('refreshConfirmBtn').addEventListener('click',()=>{['eter-theme','eter-language'].forEach(k=>localStorage.removeItem(k));sessionStorage.removeItem(UPLOAD_ACCESS_KEY);location.reload(true);});
 blurOverlay.addEventListener('click',()=>{closeLoginModal();closeMapModal();});
 window.addEventListener('click',e=>{
   if(!refreshConfirm.contains(e.target)&&e.target!==refreshButton)refreshConfirm.classList.remove('active');
@@ -631,7 +715,8 @@ document.getElementById('languageToggle').addEventListener('click',()=>applyLang
 
 applyLang(currentLang);
 applyTheme(localStorage.getItem('eter-theme')==='light'?'light':'dark');
-await authReady;
+updateAccessUI();
+await loadGallery();
 </script>
 </body>
 </html>
