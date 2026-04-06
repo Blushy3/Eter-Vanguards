@@ -148,12 +148,6 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-family
 .prof-link-edit-row input:focus{border-color:var(--prof-accent);}
 .prof-link-save-btn{padding:8px 14px;border-radius:8px;background:var(--prof-accent);border:none;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer;}
 
-/* STATS ROW */
-.prof-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.prof-stat-tile{background:var(--prof-card-bg);border:1px solid var(--prof-card-border);border-radius:14px;padding:12px;text-align:center;}
-.prof-stat-val{font-size:20px;font-weight:700;color:var(--prof-accent);}
-.prof-stat-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-text);margin-top:2px;}
-
 /* GALLERY */
 .prof-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
 .prof-gallery-item{aspect-ratio:1/1;border-radius:12px;overflow:hidden;border:1px solid var(--prof-card-border);cursor:pointer;transition:transform .3s,border-color .3s,box-shadow .3s;}
@@ -283,7 +277,6 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 @media(max-width:640px){
   .control-panel{left:14px;right:14px;bottom:14px;justify-content:space-between;}
   .prof-edit-panel{width:100vw;}
-  .prof-stats-row{grid-template-columns:repeat(2,1fr);}
   .refresh-confirm,.profile-dropdown{left:14px;right:14px;bottom:78px;width:auto;}
 }
 </style>
@@ -334,15 +327,6 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
         <div class="prof-card">
           <div class="prof-section-title">O mnie</div>
           <div class="prof-bio-text" id="profBio"><span class="prof-bio-empty">Brak opisu.</span></div>
-        </div>
-        <!-- STATS -->
-        <div class="prof-card">
-          <div class="prof-section-title">Statystyki (galeria)</div>
-          <div class="prof-stats-row">
-            <div class="prof-stat-tile"><div class="prof-stat-val" id="statPhotos">0</div><div class="prof-stat-label">Zdjęć</div></div>
-            <div class="prof-stat-tile"><div class="prof-stat-val" id="statJoined">—</div><div class="prof-stat-label">Dołączył</div></div>
-            <div class="prof-stat-tile"><div class="prof-stat-val" id="statTeam">EVG</div><div class="prof-stat-label">Drużyna</div></div>
-          </div>
         </div>
         <!-- LINKS -->
         <div class="prof-card">
@@ -460,12 +444,10 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 </div>
 
 <script type="module">
-import { supabase, initEterAuth } from './auth.js';
+import { supabase } from './supabase-client.js';
 
 let viewedUsername=null;
 let viewedProfile=null;
-let sessionUser=null;
-let currentUsername=null;
 let isOwn=false;
 let pendingProfileTheme='prof-default';
 let pendingFrameStyle='none';
@@ -473,21 +455,25 @@ let socialLinks=[];
 let currentLang=localStorage.getItem('eter-language')||'pl';
 const params=new URLSearchParams(location.search);
 viewedUsername=params.get('user');
-const authReady=initEterAuth({
-  loginUsernameId:'loginUsername',
-  loginPasswordId:'loginPassword',
-  rememberMeId:'rememberMe',
-  loginBtnId:'loginBtn',
-  loginErrorId:'loginError',
-  loginAvatarId:'loginAvatar',
-  loginActionValueId:'loginActionValue',
-  dropdownUsernameId:'dropdownUsername',
-  profileLinkId:'profileLink',
-  onAuthStateResolved:async(authState)=>{
-    sessionUser=authState.user||null;
-    currentUsername=authState.username||null;
-  }
-});
+const EDIT_ACCESS_PREFIX='eter-edit-access:';
+function getEditAccess(username){
+  try{return JSON.parse(sessionStorage.getItem(EDIT_ACCESS_PREFIX+username)||'null');}
+  catch{return null;}
+}
+function setEditAccess(username,code){
+  sessionStorage.setItem(EDIT_ACCESS_PREFIX+username,JSON.stringify({username,code}));
+}
+function clearEditAccess(username){
+  sessionStorage.removeItem(EDIT_ACCESS_PREFIX+username);
+}
+function hasEditAccess(username){
+  return !!getEditAccess(username);
+}
+async function verifyCode(username,code){
+  const { data, error } = await supabase.rpc('verify_profile_code',{ p_username:username, p_code:code });
+  if(error)throw error;
+  return Array.isArray(data)&&data.length?data[0]:null;
+}
 if(false){
 const u2e={blushyk:'blushyk@eter.gg',tengrubytyp:'tengrubytyp@eter.gg',ratatuii:'ratatuii@eter.gg',licz1:'licz1@eter.gg',mdzer:'mdzer@eter.gg',future:'future@eter.gg'};
 
@@ -561,17 +547,9 @@ supabase.auth.onAuthStateChange(async(_,session)=>{
 }
 
 async function init(){
-  if(!sessionUser){
-    const{data:{session}}=await supabase.auth.getSession();
-    sessionUser=session?.user||null;
-  }
-
   if(!viewedUsername){
     // Własny profil bez ?user= — pobierz z sesji
-    if(!sessionUser){location.href='index.html';return;}
-    const{data:p}=await supabase.from('profiles').select('*').eq('id',sessionUser.id).single();
-    viewedUsername=p?.username||null;
-    if(!viewedUsername){location.href='index.html';return;}
+    location.href='index.html';return;
   }
 
   // Load profile by username
@@ -579,10 +557,8 @@ async function init(){
   if(!prof){document.getElementById('profName').textContent='Nie znaleziono gracza';return;}
   viewedProfile=prof;
 
-  // Check ownership
-  if(sessionUser&&sessionUser.id===prof.id){
-    isOwn=true;document.body.classList.add('is-own-profile');
-  }
+  isOwn=hasEditAccess(viewedUsername);
+  document.body.classList.toggle('is-own-profile',isOwn);
 
   renderProfile(prof);
   await loadGallery(prof.username);
@@ -633,12 +609,6 @@ function renderProfile(prof){
   socialLinks=Array.isArray(prof.social_links)?prof.social_links:[];
   renderLinks();
 
-  // Joined
-  if(prof.created_at){
-    const d=new Date(prof.created_at);
-    document.getElementById('statJoined').textContent=d.toLocaleDateString('pl-PL',{month:'short',year:'numeric'});
-  }
-
   // Pre-fill edit form
   document.getElementById('editDisplayName').value=prof.display_name||prof.username||'';
   document.getElementById('editBio').value=prof.bio||'';
@@ -669,7 +639,6 @@ function renderLinks(){
 async function loadGallery(username){
   const{data}=await supabase.from('gallery').select('*').eq('username',username).order('created_at',{ascending:false});
   const items=data||[];
-  document.getElementById('statPhotos').textContent=items.length;
   const grid=document.getElementById('profGallery');
   const empty=document.getElementById('profGalleryEmpty');
   grid.innerHTML='';
@@ -685,6 +654,7 @@ async function loadGallery(username){
 
 // ---- EDIT PANEL ----
 window.openEditPanel=function(){
+  if(!hasEditAccess(viewedUsername)){openCodeModal(viewedUsername);return;}
   document.getElementById('editPanel').classList.add('open');
   document.getElementById('blur-overlay').classList.add('active');
 };
@@ -706,7 +676,8 @@ window.selectFrame=function(frame,el){
 };
 
 window.saveProfile=async function(){
-  if(!isOwn)return;
+  const access=getEditAccess(viewedUsername);
+  if(!access)return;
   const btn=document.getElementById('editSaveBtn');
   btn.disabled=true;btn.textContent='Zapisywanie...';
 
@@ -714,14 +685,16 @@ window.saveProfile=async function(){
   const bio=document.getElementById('editBio').value.trim();
   const trackerUrl=document.getElementById('editTrackerUrl').value.trim();
 
-  const{error}=await supabase.from('profiles').update({
-    display_name:displayName||null,
-    bio:bio||null,
-    tracker_url:trackerUrl||null,
-    profile_style:pendingProfileTheme,
-    frame_style:pendingFrameStyle,
-    social_links:socialLinks
-  }).eq('id',sessionUser.id);
+  const{error}=await supabase.rpc('update_profile_by_code',{
+    p_username:viewedUsername,
+    p_code:access.code,
+    p_display_name:displayName||null,
+    p_bio:bio||null,
+    p_tracker_url:trackerUrl||null,
+    p_profile_style:pendingProfileTheme,
+    p_frame_style:pendingFrameStyle,
+    p_social_links:socialLinks
+  });
 
   btn.disabled=false;btn.textContent='💾 Zapisz zmiany';
   if(error){alert('Błąd zapisu: '+error.message);return;}
@@ -745,28 +718,30 @@ function showSaveStatus(){
 
 // ---- AVATAR / BANNER UPLOAD ----
 document.getElementById('avatarFileInput').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file||!isOwn)return;
+  const access=getEditAccess(viewedUsername);
+  const file=e.target.files[0];if(!file||!access)return;
   if(file.size>3*1024*1024){alert('Maks. 3 MB dla avatara.');return;}
   const ext=file.name.split('.').pop();
-  const fname=`avatar_${sessionUser.id}.${ext}`;
+  const fname=`avatar_${viewedUsername}.${ext}`;
   const{error:se}=await supabase.storage.from('EterGallery').upload(fname,file,{upsert:true});
   if(se){alert('Błąd uploadu: '+se.message);return;}
   const{data:ud}=supabase.storage.from('EterGallery').getPublicUrl(fname);
-  await supabase.from('profiles').update({avatar_url:ud.publicUrl+'?t='+Date.now()}).eq('id',sessionUser.id);
+  await supabase.rpc('update_profile_assets_by_code',{p_username:viewedUsername,p_code:access.code,p_avatar_url:ud.publicUrl+'?t='+Date.now(),p_banner_url:null});
   const av=document.getElementById('profAvatar');
   av.innerHTML=`<img src="${ud.publicUrl}?t=${Date.now()}" alt="">`;
   showSaveStatus();
 });
 
 document.getElementById('bannerFileInput').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file||!isOwn)return;
+  const access=getEditAccess(viewedUsername);
+  const file=e.target.files[0];if(!file||!access)return;
   if(file.size>5*1024*1024){alert('Maks. 5 MB dla bannera.');return;}
   const ext=file.name.split('.').pop();
-  const fname=`banner_${sessionUser.id}.${ext}`;
+  const fname=`banner_${viewedUsername}.${ext}`;
   const{error:se}=await supabase.storage.from('EterGallery').upload(fname,file,{upsert:true});
   if(se){alert('Błąd uploadu: '+se.message);return;}
   const{data:ud}=supabase.storage.from('EterGallery').getPublicUrl(fname);
-  await supabase.from('profiles').update({banner_url:ud.publicUrl+'?t='+Date.now()}).eq('id',sessionUser.id);
+  await supabase.rpc('update_profile_assets_by_code',{p_username:viewedUsername,p_code:access.code,p_avatar_url:null,p_banner_url:ud.publicUrl+'?t='+Date.now()});
   const bi=document.getElementById('bannerImg');
   bi.src=ud.publicUrl+'?t='+Date.now();bi.style.display='block';
   document.getElementById('bannerWrap').style.background='';
@@ -809,6 +784,70 @@ window.closeLoginModal=function(){
   loginModal.classList.remove('active');
   document.getElementById('loginError').textContent='';
 };
+function updateAccessUI(){
+  const access=getEditAccess(viewedUsername);
+  const avatar=document.getElementById('loginAvatar');
+  const value=document.getElementById('loginActionValue');
+  const dropdown=document.getElementById('dropdownUsername');
+  const labels=document.querySelectorAll('#loginModal .login-label');
+  const remember=document.querySelector('.login-remember');
+  document.querySelector('#loginModal .modal-header h3').textContent='Kod dostepu';
+  document.querySelector('#loginModal .login-title').textContent='Edycja profilu';
+  if(labels[0])labels[0].textContent='Nick';
+  if(labels[1])labels[1].textContent='Kod';
+  if(remember)remember.style.display='none';
+  document.querySelector('.login-action-label').textContent='Dostep';
+  document.querySelector('#profileDropdown .profile-dropdown-name span').textContent='Odblokowano dla';
+  document.querySelector('#profileDropdown .logout').textContent='Wyczysc dostep';
+  document.getElementById('loginBtn').textContent='Odblokuj';
+  if(access?.username){
+    value.textContent=access.username;
+    dropdown.textContent=access.username;
+    avatar.textContent=access.username.charAt(0).toUpperCase();
+  }else{
+    value.textContent='Kod';
+    dropdown.textContent='brak';
+    avatar.textContent='#';
+  }
+}
+function openCodeModal(prefill=''){
+  closeAllPopups();
+  blurOverlay.classList.add('active');
+  loginModal.classList.add('active');
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginUsername').value=prefill||viewedUsername||'';
+  document.getElementById('loginPassword').value='';
+}
+window.handleLogin=async function(){
+  const username=document.getElementById('loginUsername').value.trim();
+  const code=document.getElementById('loginPassword').value.trim();
+  const btn=document.getElementById('loginBtn');
+  const err=document.getElementById('loginError');
+  err.textContent='';
+  if(!username||!code){err.textContent='Wpisz nick i kod.';return;}
+  btn.disabled=true;btn.textContent='Sprawdzanie...';
+  try{
+    const profile=await verifyCode(username,code);
+    if(!profile){err.textContent='Niepoprawny nick albo kod.';return;}
+    setEditAccess(username,code);
+    isOwn=username===viewedUsername;
+    document.body.classList.toggle('is-own-profile',isOwn);
+    updateAccessUI();
+    closeLoginModal();
+    if(username===viewedUsername)window.openEditPanel();
+  }catch(error){
+    err.textContent='Blad dostepu: '+error.message;
+  }finally{
+    btn.disabled=false;btn.textContent='Odblokuj';
+  }
+};
+window.handleLogout=function(){
+  clearEditAccess(viewedUsername);
+  isOwn=false;
+  document.body.classList.remove('is-own-profile');
+  document.getElementById('profileDropdown').classList.remove('active');
+  updateAccessUI();
+};
 
 window.hideRefreshConfirm=function(){
   refreshConfirm.classList.remove('active');
@@ -816,8 +855,8 @@ window.hideRefreshConfirm=function(){
 
 loginToggle.addEventListener('click',e=>{
   e.stopPropagation();
-  if(sessionUser){closeAllPopups();profileDropdown.classList.toggle('active');}
-  else{closeAllPopups();blurOverlay.classList.add('active');loginModal.classList.add('active');}
+  if(hasEditAccess(viewedUsername)){closeAllPopups();profileDropdown.classList.toggle('active');}
+  else{openCodeModal(viewedUsername);}
 });
 
 refreshButton.addEventListener('click',e=>{
@@ -828,6 +867,7 @@ refreshButton.addEventListener('click',e=>{
 
 document.getElementById('refreshConfirmBtn').addEventListener('click',()=>{
   ['eter-theme','eter-language'].forEach(k=>localStorage.removeItem(k));
+  clearEditAccess(viewedUsername);
   location.reload(true);
 });
 
@@ -855,7 +895,7 @@ document.getElementById('languageToggle').addEventListener('click',()=>applyLang
 applyLang(currentLang);
 
 async function bootstrap(){
-  await authReady;
+  updateAccessUI();
   await init();
 }
 
