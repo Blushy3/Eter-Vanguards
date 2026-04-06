@@ -347,10 +347,9 @@ window.handleLogin=async function(){
   const email=u2e[u];
   if(!email){err.textContent='Nieznany login. Sprawdź pisownię.';return;}
   btn.disabled=true;btn.textContent='Logowanie...';
-  /*
 
   // Ustaw długość sesji
-  if(!remember){
+  if(false){
     // Sesja tylko na czas przeglądarki — usuniemy przy wylogowaniu
     supabase.auth.updateUser;// nie ma oficjalnego "session-only" w supabase JS v2
     // Zamiast tego zapisujemy flagę
@@ -359,7 +358,6 @@ window.handleLogin=async function(){
     sessionStorage.removeItem('eter-no-remember');
   }
 
-  */
   const{error}=await supabase.auth.signInWithPassword({email,password:p});
   if(error){err.textContent='Błędne hasło lub login.';btn.disabled=false;btn.textContent='Zaloguj się';return;}
   closeLoginModal();
@@ -395,7 +393,13 @@ async function updateAuthUI(user,username,avatarUrl){
 }
 
 async function restoreAuthSession(){
-  const { data: { session } } = await supabase.auth.getSession();
+  let session=null;
+  const current=await supabase.auth.getSession();
+  session=current&&current.data?current.data.session:null;
+  if(!session){
+    const refreshed=await supabase.auth.refreshSession().catch(()=>null);
+    session=refreshed&&refreshed.data?refreshed.data.session:null;
+  }
   if(session){
     const { data: prof } = await supabase.from('profiles').select('username,avatar_url').eq('id',session.user.id).single();
     await updateAuthUI(session.user,prof?.username||session.user.email,prof?.avatar_url||null);
