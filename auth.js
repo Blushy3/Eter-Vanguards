@@ -4,6 +4,7 @@ const SB_URL = 'https://zllishknfqylpommgnew.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsbGlzaGtuZnF5bHBvbW1nbmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzOTk4MDksImV4cCI6MjA5MDk3NTgwOX0.Tm7ZGifcT5Y2kBJxaTUK_ASQruVcpHrM9UDMtmQiT4A';
 const STORAGE_KEY = 'eter-supabase-auth';
 const MODE_KEY = 'eter-auth-mode';
+const TAB_KEY = 'eter-auth-tab';
 
 const usernameToEmail = {
   blushyk: 'blushyk@eter.gg',
@@ -14,49 +15,33 @@ const usernameToEmail = {
   future: 'future@eter.gg'
 };
 
-function getMode() {
-  return localStorage.getItem(MODE_KEY) === 'local' ? 'local' : 'session';
-}
-
 function setMode(remember) {
   if (remember) {
     localStorage.setItem(MODE_KEY, 'local');
-    sessionStorage.removeItem(MODE_KEY);
   } else {
-    sessionStorage.setItem(MODE_KEY, 'session');
     localStorage.removeItem(MODE_KEY);
   }
+  sessionStorage.setItem(TAB_KEY, '1');
 }
 
 function clearMode() {
   localStorage.removeItem(MODE_KEY);
-  sessionStorage.removeItem(MODE_KEY);
+  sessionStorage.removeItem(TAB_KEY);
 }
 
-const hybridStorage = {
-  getItem(key) {
-    return localStorage.getItem(key) ?? sessionStorage.getItem(key);
-  },
-  setItem(key, value) {
-    if (getMode() === 'local') {
-      localStorage.setItem(key, value);
-      sessionStorage.removeItem(key);
-    } else {
-      sessionStorage.setItem(key, value);
-      localStorage.removeItem(key);
-    }
-  },
-  removeItem(key) {
-    localStorage.removeItem(key);
-    sessionStorage.removeItem(key);
-  }
-};
+const rememberEnabled = localStorage.getItem(MODE_KEY) === 'local';
+const hasActiveTab = sessionStorage.getItem(TAB_KEY) === '1';
+
+if (!rememberEnabled && !hasActiveTab) {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+sessionStorage.setItem(TAB_KEY, '1');
 
 export const supabase = createClient(SB_URL, SB_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    storage: hybridStorage,
     storageKey: STORAGE_KEY
   }
 });
@@ -210,7 +195,8 @@ export async function loginWithForm() {
 
 export async function logout() {
   clearMode();
-  hybridStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY);
+  sessionStorage.removeItem(STORAGE_KEY);
   await supabase.auth.signOut().catch(() => null);
   await applySession(null);
 }
