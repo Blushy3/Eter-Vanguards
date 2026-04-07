@@ -228,7 +228,7 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-family
 .prof-post-title{font-size:15px;font-weight:700}
 .prof-post-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted-text)}
 .prof-post-text{font-size:13px;line-height:1.6;color:var(--text-color);position:relative}
-.prof-post-text.is-collapsed{max-height:220px;overflow:hidden}
+.prof-post-text.is-collapsed{max-height:150px;overflow:hidden}
 .prof-post-text.is-collapsed::after{content:'';position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,rgba(20,20,28,0),rgba(20,20,28,.96))}
 .prof-post-expand{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--prof-card-border);background:rgba(255,255,255,.04);color:var(--text-color);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease}
 .prof-post-expand:hover{transform:translateY(-1px);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24)}
@@ -245,6 +245,10 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-family
 .prof-showcase-media{position:absolute;inset:0;background:center/contain no-repeat;filter:saturate(1.04)}
 .prof-showcase-panel.fill-panel .prof-showcase-media{background-size:cover}
 .prof-showcase-panel::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,8,18,.08),rgba(6,8,18,.72))}
+.prof-card.showcase-fullbleed{padding:0;overflow:hidden}
+.prof-card.showcase-fullbleed .prof-section-title{display:none}
+.prof-card.showcase-fullbleed .prof-showcase-panel{min-height:260px;border:none;border-radius:20px}
+.prof-card.showcase-fullbleed .prof-showcase-panel::after{background:none}
 .prof-showcase-empty{font-size:13px;color:var(--muted-text);text-align:center;padding:28px 20px}
 .skin-void .prof-post-card{background:linear-gradient(135deg,rgba(20,16,38,.96),rgba(48,18,70,.72));border-color:rgba(178,120,255,.3);box-shadow:0 18px 38px rgba(90,30,120,.22)}
 .skin-icy .prof-post-card{background:linear-gradient(135deg,rgba(10,26,42,.94),rgba(24,58,80,.8));border-color:rgba(130,214,255,.28);box-shadow:0 18px 38px rgba(70,170,255,.16)}
@@ -277,10 +281,28 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-family
 .name-particles.particles-neon span{background:#7df8ff;box-shadow:0 0 12px rgba(125,248,255,.7)}
 .name-particles.particles-gold span{background:#ffe08c;box-shadow:0 0 12px rgba(255,224,140,.72)}
 .name-particles.particles-rose span{background:#ffb2d9;box-shadow:0 0 12px rgba(255,178,217,.72)}
+.name-particles.particles-orbit span:nth-child(1){width:8px;height:8px;border:1px solid rgba(173,230,255,.8);background:transparent;animation:orbitA 3.6s linear infinite}
+.name-particles.particles-orbit span:nth-child(2){width:5px;height:5px;background:#b7f0ff;animation:orbitB 2.8s linear infinite}
+.name-particles.particles-orbit span:nth-child(3){width:6px;height:6px;background:#fff3a4;animation:orbitC 3.2s linear infinite}
+.name-particles.particles-runes span{border-radius:2px;background:#d7c5ff;box-shadow:0 0 10px rgba(215,197,255,.7)}
+.name-particles.particles-runes span:nth-child(1){transform:rotate(18deg);animation:particleRune 3s ease-in-out infinite}
+.name-particles.particles-runes span:nth-child(2){transform:rotate(-14deg);animation:particleRune 3.4s ease-in-out infinite}
+.name-particles.particles-runes span:nth-child(3){transform:rotate(32deg);animation:particleRune 2.9s ease-in-out infinite}
+.name-particles.particles-bubbles span{background:rgba(170,240,255,.28);border:1px solid rgba(183,240,255,.72);animation:particleBubble 3.8s ease-in-out infinite}
+.center-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.92);min-width:260px;max-width:min(92vw,420px);padding:16px 18px;border-radius:18px;border:1px solid var(--card-border-strong);background:var(--menu-bg);backdrop-filter:blur(18px);box-shadow:0 24px 60px rgba(10,13,24,.22);opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:4200;text-align:center}
+.center-toast.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.center-toast-title{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-text);margin-bottom:8px}
+.center-toast-text{font-size:15px;font-weight:700;color:var(--text-color)}
+.center-toast.success .center-toast-text{color:#bff7d0}
 @keyframes overlayDrift{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(-12px,8px,0)}100%{transform:translate3d(0,0,0)}}
 @keyframes overlayPulse{0%,100%{opacity:.32}50%{opacity:.62}}
 @keyframes particleFloat{0%,100%{transform:translateY(0) scale(.9);opacity:.25}50%{transform:translateY(-10px) scale(1.2);opacity:1}}
 @keyframes rainSlide{0%{background-position:0 0}100%{background-position:0 26px}}
+@keyframes orbitA{0%{transform:translate(0,0)}25%{transform:translate(24px,-10px)}50%{transform:translate(44px,6px)}75%{transform:translate(18px,14px)}100%{transform:translate(0,0)}}
+@keyframes orbitB{0%{transform:translate(14px,18px)}50%{transform:translate(54px,-4px)}100%{transform:translate(14px,18px)}}
+@keyframes orbitC{0%{transform:translate(58px,10px)}50%{transform:translate(20px,-8px)}100%{transform:translate(58px,10px)}}
+@keyframes particleRune{0%,100%{opacity:.32;transform:translateY(0) rotate(0deg)}50%{opacity:1;transform:translateY(-7px) rotate(18deg)}}
+@keyframes particleBubble{0%,100%{opacity:.2;transform:translateY(0) scale(.8)}50%{opacity:.95;transform:translateY(-12px) scale(1.08)}}
 .prof-post-empty{font-size:13px;color:var(--muted-text);text-align:center;padding:32px 20px;min-height:108px;display:flex;align-items:center;justify-content:center}
 .social-launch-card,.friends-panel{display:none!important}
 
@@ -637,7 +659,7 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 <div class="profile-dropdown" id="profileDropdown">
   <div class="profile-dropdown-name"><span>Zalogowany jako</span><span id="dropdownUsername">—</span></div>
   <a class="profile-dropdown-item" id="profileLink" href="profil.html">👤 Zobacz profil</a>
-  <div class="profile-dropdown-item logout" onclick="handleLogout()">🚪 Wyloguj się</div>
+  <div class="profile-dropdown-item logout" onclick="handleLogout()">🚪 Anuluj dostęp</div>
 </div>
 <div class="modal post-modal" id="postModal">
   <div class="modal-header"><h3>Nowy post</h3><button class="modal-close" onclick="closePostModal()">×</button></div>
@@ -656,6 +678,17 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
   <div class="refresh-confirm-actions">
     <button class="refresh-confirm-btn" onclick="hideRefreshConfirm()">Anuluj</button>
     <button class="refresh-confirm-btn confirm" id="refreshConfirmBtn">Odśwież</button>
+  </div>
+</div>
+<div class="center-toast" id="actionToast"><div class="center-toast-title" id="actionToastTitle">Gotowe</div><div class="center-toast-text" id="actionToastText">Skopiowano</div></div>
+<div class="modal" id="deleteConfirmModal">
+  <div class="modal-header"><h3 id="deleteConfirmTitle">Usuń post</h3><button class="modal-close" onclick="hideDeleteConfirm()">×</button></div>
+  <div class="login-form">
+    <div class="refresh-confirm-text" id="deleteConfirmText">Czy na pewno chcesz to zrobić? Nie będzie dało się tego cofnąć.</div>
+    <div class="refresh-confirm-actions">
+      <button class="refresh-confirm-btn" type="button" onclick="hideDeleteConfirm()" id="deleteCancelBtn">Anuluj</button>
+      <button class="refresh-confirm-btn confirm" type="button" id="deleteConfirmBtn">Usuń</button>
+    </div>
   </div>
 </div>
 
@@ -690,6 +723,7 @@ let pendingNameParticles='particles-none';
 let pendingShowcaseUrl='';
 let pendingShowcaseFill=false;
 let currentLang=localStorage.getItem('eter-language')||'pl';
+let pendingDeleteAction=null;
 const params=new URLSearchParams(location.search);
 viewedUsername=params.get('user');
 const EDIT_ACCESS_PREFIX='eter-edit-access:';
@@ -1176,6 +1210,11 @@ const profileDropdown=document.getElementById('profileDropdown');
 const refreshConfirm=document.getElementById('refreshConfirm');
 const loginToggle=document.getElementById('loginToggle');
 const refreshButton=document.getElementById('refreshButton');
+document.getElementById('deleteConfirmBtn').addEventListener('click',async()=>{
+  const action=pendingDeleteAction;
+  hideDeleteConfirm();
+  if(action)await action();
+});
 
 function closeAllPopups(){
   refreshConfirm.classList.remove('active');
@@ -1447,11 +1486,33 @@ function renderShowcase(){
     return;
   }
   if(card)card.style.display='';
+  if(card)card.classList.toggle('showcase-fullbleed',Boolean(pendingShowcaseFill));
   empty.style.display='none';
   host.classList.add('visible');
   host.classList.toggle('fill-panel',Boolean(pendingShowcaseFill));
   host.innerHTML=`<div class="prof-showcase-media" style="background-image:url('${pendingShowcaseUrl.replace(/'/g,"%27")}')"></div>`;
 }
+
+function showActionToast(message,title=null){
+  const toast=document.getElementById('actionToast');
+  document.getElementById('actionToastTitle').textContent=title||(currentLang==='pl'?'Gotowe':'Done');
+  document.getElementById('actionToastText').textContent=message;
+  toast.classList.add('visible','success');
+  clearTimeout(showActionToast._timer);
+  showActionToast._timer=setTimeout(()=>toast.classList.remove('visible','success'),1700);
+}
+
+function askDeleteConfirmation(onConfirm){
+  pendingDeleteAction=onConfirm;
+  document.getElementById('blur-overlay').classList.add('active');
+  document.getElementById('deleteConfirmModal').classList.add('active');
+}
+
+window.hideDeleteConfirm=function(){
+  pendingDeleteAction=null;
+  document.getElementById('deleteConfirmModal').classList.remove('active');
+  if(!document.getElementById('editPanel').classList.contains('open')&&!profileDropdown.classList.contains('active')&&!document.getElementById('postModal').classList.contains('active')&&!document.getElementById('loginModal').classList.contains('active'))document.getElementById('blur-overlay').classList.remove('active');
+};
 
 function ensureCustomizationOptions(){
   const socialList=document.querySelector('.prof-edit-mini-list');
@@ -1536,6 +1597,9 @@ function ensureCustomizationOptions(){
           <div class="theme-swatch" data-particles="particles-neon" onclick="selectNameParticles('particles-neon',this)"><div class="theme-swatch-dot" style="background:linear-gradient(135deg,#7df8ff,#36d7ff)"></div>Neon</div>
           <div class="theme-swatch" data-particles="particles-gold" onclick="selectNameParticles('particles-gold',this)"><div class="theme-swatch-dot" style="background:linear-gradient(135deg,#fff0a6,#ffd15e)"></div>Gold</div>
           <div class="theme-swatch" data-particles="particles-rose" onclick="selectNameParticles('particles-rose',this)"><div class="theme-swatch-dot" style="background:linear-gradient(135deg,#ffc6e3,#ff8cc3)"></div>Rose</div>
+          <div class="theme-swatch" data-particles="particles-orbit" onclick="selectNameParticles('particles-orbit',this)"><div class="theme-swatch-dot" style="background:linear-gradient(135deg,#b7f0ff,#fff3a4)"></div>Orbit</div>
+          <div class="theme-swatch" data-particles="particles-runes" onclick="selectNameParticles('particles-runes',this)"><div class="theme-swatch-dot" style="background:linear-gradient(135deg,#d7c5ff,#8f7cff)"></div>Runes</div>
+          <div class="theme-swatch" data-particles="particles-bubbles" onclick="selectNameParticles('particles-bubbles',this)"><div class="theme-swatch-dot" style="background:linear-gradient(135deg,#d2fbff,#7bdcff)"></div>Bubbles</div>
         </div>
       </div>
     `);
@@ -1565,7 +1629,7 @@ function repairStaticText(){
 
   setText('#bioSectionTitle',isPl?'O mnie':'About');
   setText('#linksSectionTitle',isPl?'Linki':'Links');
-  setText('#gallerySectionTitle',isPl?'Showcase':'Showcase');
+  setText('#gallerySectionTitle',isPl?'Wyróżnione':'Showcase');
   setText('#postsSectionTitle',isPl?'Posty gracza':'Player posts');
   setText('#editPanelTitle',isPl?'\u270f\ufe0f Edytuj profil':'\u270f\ufe0f Edit profile');
   setText('#displayNameLabel',isPl?'Nick wy\u015bwietlany':'Displayed nickname');
@@ -1600,6 +1664,11 @@ function repairStaticText(){
   setText('.refresh-confirm-text',isPl?'Czy na pewno chcesz od\u015bwie\u017cy\u0107 stron\u0119?':'Are you sure you want to refresh the page?');
   setText('#refreshConfirmBtn',isPl?'Od\u015bwie\u017c':'Refresh');
   if(refreshButtons[0])refreshButtons[0].textContent=isPl?'Anuluj':'Cancel';
+  setText('#deleteConfirmTitle',isPl?'Usuń post':'Delete post');
+  setText('#deleteConfirmText',isPl?'Czy na pewno chcesz to zrobić? Nie będzie dało się tego cofnąć.':'Are you sure you want to do this? This cannot be undone.');
+  setText('#deleteCancelBtn',isPl?'Anuluj':'Cancel');
+  setText('#deleteConfirmBtn',isPl?'Usuń':'Delete');
+  setText('#actionToastTitle',isPl?'Gotowe':'Done');
   setText('#loginBtn',isPl?'Zaloguj si\u0119':'Sign in');
   setText('#editSaveBtn',isPl?'\ud83d\udcbe Zapisz zmiany':'\ud83d\udcbe Save changes');
   setText('#postPremierLabel',isPl?'Post premierowy':'Premier post');
@@ -1689,7 +1758,7 @@ function repairStaticText(){
   };
   const skinNames={'skin-default':isPl?'Domyślna':'Default','skin-void':'Void','skin-icy':'Icy','skin-ember':'Ember','skin-celestial':'Celestial','skin-obsidian':'Obsidian','skin-nebula':'Nebula','skin-toxic':'Toxic'};
   const overlayNames={'overlay-none':isPl?'Brak':'None','overlay-stars':isPl?'Gwiazdy':'Stars','overlay-aurora':'Aurora','overlay-grid':'Grid','overlay-fireflies':isPl?'Świetliki':'Fireflies','overlay-rain':'Rain','overlay-sparks':isPl?'Sparks':'Sparks'};
-  const particleNames={'particles-none':isPl?'Brak':'None','particles-ember':'Ember','particles-cosmic':'Cosmic','particles-frost':'Frost','particles-neon':'Neon','particles-gold':'Gold','particles-rose':'Rose'};
+  const particleNames={'particles-none':isPl?'Brak':'None','particles-ember':'Ember','particles-cosmic':'Cosmic','particles-frost':'Frost','particles-neon':'Neon','particles-gold':'Gold','particles-rose':'Rose','particles-orbit':isPl?'Orbit':'Orbit','particles-runes':isPl?'Runy':'Runes','particles-bubbles':isPl?'Bubbles':'Bubbles'};
   document.querySelectorAll('[data-theme]').forEach(el=>{if(themeNames[el.dataset.theme])el.lastChild.textContent=themeNames[el.dataset.theme];});
   document.querySelectorAll('[data-namefx]').forEach(el=>{if(effectNames[el.dataset.namefx])el.lastChild.textContent=effectNames[el.dataset.namefx];});
   document.querySelectorAll('[data-frame]').forEach(el=>{if(frameNames[el.dataset.frame])el.lastChild.textContent=frameNames[el.dataset.frame];});
@@ -1797,15 +1866,18 @@ loadPosts=async function(username){
     const expandLine=longPost?`<button class="prof-post-expand" type="button">${currentLang==='pl'?'Czytaj':'Read more'}</button>`:'';
     const premierBadge=isPremierPost(post)?`<span class="premier-badge">${currentLang==='pl'?'Premier':'Premier'}</span>`:'';
     const liked=Boolean(profilePostLikeState.get(getProfilePostId(post)));
-    card.innerHTML=`${image}<div class="prof-post-body">${titleLine}<div class="prof-post-meta${premierBadge?' has-badge':''}"><div class="prof-post-meta-top"><span>${escapeHtml(post.username||username)}</span><span>${new Date(post.created_at||Date.now()).toLocaleDateString(currentLang==='pl'?'pl-PL':'en-US')}</span></div>${premierBadge}</div>${textLine}${expandLine}<div class="prof-post-actions"><button class="prof-post-action like-btn${liked?' liked':''}" type="button" data-action="like">&#10084; <span>${Number(post.likes_count||0)}</span></button><button class="prof-post-action share-btn" type="button" data-action="share">${currentLang==='pl'?'&#8599; Udost\u0119pnij':'&#8599; Share'}</button></div></div>`;
+    const canDelete=isOwn&&post.username===viewedUsername;
+    card.innerHTML=`${image}<div class="prof-post-body">${titleLine}<div class="prof-post-meta${premierBadge?' has-badge':''}"><div class="prof-post-meta-top"><span>${escapeHtml(post.username||username)}</span><span>${new Date(post.created_at||Date.now()).toLocaleDateString(currentLang==='pl'?'pl-PL':'en-US')}</span></div>${premierBadge}</div>${textLine}${expandLine}<div class="prof-post-actions"><button class="prof-post-action like-btn${liked?' liked':''}" type="button" data-action="like">&#10084; <span>${Number(post.likes_count||0)}</span></button><button class="prof-post-action share-btn" type="button" data-action="share">${currentLang==='pl'?'&#8599; Udost\u0119pnij':'&#8599; Share'}</button>${canDelete?`<button class="prof-post-action" type="button" data-action="delete">${currentLang==='pl'?'✕ Usuń':'✕ Delete'}</button>`:''}</div></div>`;
     const img=card.querySelector('img');
     if(img)img.addEventListener('click',()=>openLightbox(post.image_url));
     const likeBtn=card.querySelector('[data-action="like"]');
     const shareBtn=card.querySelector('[data-action="share"]');
+    const deleteBtn=card.querySelector('[data-action="delete"]');
     const expandBtn=card.querySelector('.prof-post-expand');
     const textEl=card.querySelector('.prof-post-text');
     if(likeBtn)likeBtn.addEventListener('click',()=>handleProfilePostLike(post,likeBtn));
     if(shareBtn)shareBtn.addEventListener('click',()=>shareProfilePost(post));
+    if(deleteBtn)deleteBtn.addEventListener('click',()=>deleteProfilePost(post));
     if(expandBtn&&textEl){
       const toggleExpand=()=>{
         const collapsed=textEl.classList.toggle('is-collapsed');
@@ -1861,17 +1933,39 @@ async function shareProfilePost(post){
   const title=(post.title||'').trim();
   const body=sanitizePostContent(post.content||post.description||'');
   const emoji=(post.emoji||'').trim();
-  const url=`${location.origin}${location.pathname}?user=${encodeURIComponent(post.username||viewedUsername)}`;
+  const url=`${location.origin}${location.pathname}?user=${encodeURIComponent(post.username||viewedUsername)}#post-${post.id||''}`;
   const text=[emoji,title,body].filter(Boolean).join(' ').trim();
   if(navigator.share){
     try{await navigator.share({title:title||'Post',text:text||url,url});return;}catch{}
   }
   try{
     await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);
-    alert(currentLang==='pl'?'Link do posta skopiowany.':'Post link copied.');
+    showActionToast(currentLang==='pl'?'Poprawnie skopiowano link do posta.':'Post link copied successfully.');
   }catch{
     alert(url);
   }
+}
+
+async function deleteProfilePost(post){
+  askDeleteConfirmation(async()=>{
+    const access=getEditAccess(viewedUsername);
+    if(!access)return;
+    const { data, error } = await supabase.rpc('delete_post_by_code',{
+      p_username:viewedUsername,
+      p_code:access.code,
+      p_post_id:post.id
+    });
+    if(error){
+      alert(`${currentLang==='pl'?'Błąd usuwania':'Delete error'}: ${error.message}`);
+      return;
+    }
+    if(data===false){
+      alert(currentLang==='pl'?'Nie udało się usunąć posta.':'Could not delete the post.');
+      return;
+    }
+    showActionToast(currentLang==='pl'?'Post został usunięty.':'Post deleted.');
+    await loadPosts(viewedUsername);
+  });
 }
 
 renderLinks=function(){
