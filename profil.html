@@ -668,26 +668,12 @@ let currentLang=localStorage.getItem('eter-language')||'pl';
 const PROFILE_THEMES=['prof-default','prof-cyberpunk','prof-arcane','prof-valorant','prof-glass','prof-midnight','prof-sunset','prof-forest','prof-royal','prof-crimson','prof-aurora','prof-obsidian','prof-sakura'];
 const PROFILE_FRAMES=['frame-fire','frame-neon','frame-rainbow','frame-gold','frame-ice','frame-arcane','frame-crown','frame-toxic','frame-cosmic','frame-ember','frame-vortex','frame-matrix','frame-starlight','frame-butterfly','frame-shards','frame-royalvine','frame-halo','frame-pulse','frame-prism','frame-eclipse'];
 const PROFILE_NAME_EFFECTS=['namefx-neon','namefx-gradient','namefx-glitch','namefx-float','namefx-shimmer','namefx-outline','namefx-duotone','namefx-royal'];
-const PROFILE_LIKES_KEY='eter-liked-posts';
 const params=new URLSearchParams(location.search);
 viewedUsername=params.get('user');
 const EDIT_ACCESS_PREFIX='eter-edit-access:';
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char]));}
 function getPostId(post){return String(post.id??`${post.username||'eter'}|${post.created_at||''}|${post.title||''}|${post.image_url||''}`);}
-function getLikedPosts(){try{return JSON.parse(localStorage.getItem(PROFILE_LIKES_KEY)||'[]');}catch{return [];}}
-function setLikedPosts(ids){localStorage.setItem(PROFILE_LIKES_KEY,JSON.stringify(ids));}
-function isPostLiked(post){return getLikedPosts().includes(getPostId(post));}
-function toggleStoredLike(post){
-  const postId=getPostId(post);
-  const liked=getLikedPosts();
-  if(liked.includes(postId)){
-    setLikedPosts(liked.filter(id=>id!==postId));
-    return false;
-  }
-  liked.push(postId);
-  setLikedPosts(liked);
-  return true;
-}
+const profilePostLikeState=new Map();
 function getPostTitle(post){return (post.title||'').trim();}
 function getPostBody(post){return (post.content||post.description||'').trim();}
 function getPostEmoji(post){return (post.emoji||'').trim();}
@@ -939,7 +925,7 @@ function collectSocialLinks(){
   return links;
 }
 
-function renderLinks(){
+function renderLinksLegacy(){
   const list=document.getElementById('profLinksList');
   const card=document.getElementById('profileLinksCard');
   if(card)card.classList.toggle('is-empty',!socialLinks.length&&!isOwn);
@@ -967,7 +953,7 @@ async function loadGallery(username){
   });
 }
 
-async function loadPosts(username){
+async function loadPostsLegacy(username){
   const { data, error } = await supabase.from('posts').select('*').eq('username',username).order('created_at',{ascending:false});
   const grid=document.getElementById('profPosts');
   const empty=document.getElementById('profPostsEmpty');
@@ -1000,11 +986,26 @@ function renderLinks(){
 }
 
 function handleProfilePostLike(post,button){
-  const likedNow=toggleStoredLike(post);
+  const likedNow=!Boolean(profilePostLikeState.get(getPostId(post)));
   const countEl=button.querySelector('span:last-child');
-  const baseLikes=Number(post.likes_count||0);
-  if(countEl)countEl.textContent=String(baseLikes+(likedNow?1:0));
+  const previousCount=Number(post.likes_count||0);
+  const nextCount=Math.max(0,previousCount+(likedNow?1:-1));
+  button.disabled=true;
+  profilePostLikeState.set(getPostId(post),likedNow);
   button.classList.toggle('liked',likedNow);
+  if(countEl)countEl.textContent=String(nextCount);
+  supabase.from('posts').update({ likes_count: nextCount }).eq('id',post.id).select('likes_count').single()
+    .then(({ data, error })=>{
+      if(error)throw error;
+      post.likes_count=Number(data?.likes_count??nextCount);
+    })
+    .catch(error=>{
+      profilePostLikeState.set(getPostId(post),!likedNow);
+      button.classList.toggle('liked',!likedNow);
+      if(countEl)countEl.textContent=String(previousCount);
+      alert(`Błąd polubienia: ${error.message}`);
+    })
+    .finally(()=>{button.disabled=false;});
 }
 
 async function shareProfilePost(post){
@@ -1016,6 +1017,19 @@ async function shareProfilePost(post){
   }
   try{await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);alert(profileTranslations[currentLang].postCopied);}
   catch{alert(url);}
+}
+
+async function deleteProfilePost(post){
+  const access=getEditAccess(viewedUsername);
+  if(!access||post.username!==viewedUsername)return;
+  const confirmed=confirm(currentLang==='pl'?'Usunąć ten post?':'Delete this post?');
+  if(!confirmed)return;
+  const { error } = await supabase.from('posts').delete().eq('id',post.id).eq('username',viewedUsername);
+  if(error){
+    alert(`Błąd usuwania: ${error.message}`);
+    return;
+  }
+  await loadPosts(viewedUsername);
 }
 
 async function loadPosts(username){
@@ -1034,22 +1048,25 @@ async function loadPosts(username){
     const emoji=getPostEmoji(post);
     const alt=title||body||username;
     const image=post.image_url?`<div class="prof-post-media"><img src="${post.image_url}" alt="${escapeHtml(alt)}" loading="lazy"></div>`:'';
-    const liked=isPostLiked(post);
-    const likes=Number(post.likes_count||0)+(liked?1:0);
+    const liked=Boolean(profilePostLikeState.get(getPostId(post)));
+    const likes=Number(post.likes_count||0);
     const showShare=postHasShareContent(post);
+    const canDelete=isOwn&&post.username===viewedUsername;
     const bodyParts=[];
     if(emoji)bodyParts.push(`<div class="post-emoji">${escapeHtml(emoji)}</div>`);
     if(title)bodyParts.push(`<div class="prof-post-title">${escapeHtml(title)}</div>`);
     bodyParts.push(`<div class="prof-post-meta"><span>${escapeHtml(post.username||username)}</span><span>${new Date(post.created_at||Date.now()).toLocaleDateString(currentLang==='pl'?'pl-PL':'en-GB')}</span></div>`);
     if(body)bodyParts.push(`<div class="prof-post-text">${escapeHtml(body)}</div>`);
-    bodyParts.push(`<div class="prof-post-actions"><button class="prof-post-action${liked?' liked':''}" type="button" data-action="like"><span class="post-action-icon">❤</span><span>${likes}</span></button>${showShare?`<button class="prof-post-action shareable" type="button" data-action="share"><span class="post-action-icon">↗</span><span>${profileTranslations[currentLang].share}</span></button>`:''}</div>`);
+    bodyParts.push(`<div class="prof-post-actions"><button class="prof-post-action${liked?' liked':''}" type="button" data-action="like"><span class="post-action-icon">❤</span><span>${likes}</span></button>${showShare?`<button class="prof-post-action shareable" type="button" data-action="share"><span class="post-action-icon">↗</span><span>${profileTranslations[currentLang].share}</span></button>`:''}${canDelete?`<button class="prof-post-action" type="button" data-action="delete"><span class="post-action-icon">✕</span><span>${profileTranslations[currentLang].deletePost}</span></button>`:''}</div>`);
     card.innerHTML=`${image}<div class="prof-post-body">${bodyParts.join('')}</div>`;
     const img=card.querySelector('img');
     if(img)img.addEventListener('click',()=>openLightbox(post.image_url));
     const likeBtn=card.querySelector('[data-action="like"]');
     const shareBtn=card.querySelector('[data-action="share"]');
+    const deleteBtn=card.querySelector('[data-action="delete"]');
     if(likeBtn)likeBtn.addEventListener('click',()=>handleProfilePostLike(post,likeBtn));
     if(shareBtn)shareBtn.addEventListener('click',()=>shareProfilePost(post));
+    if(deleteBtn)deleteBtn.addEventListener('click',()=>deleteProfilePost(post));
     grid.appendChild(card);
   });
 }
@@ -1262,6 +1279,7 @@ const profileTranslations={
     loading:'Ładowanie...',
     postCopied:'Link do posta skopiowany.',
     share:'Udostępnij',
+    deletePost:'Usuń',
     emptyPost:'Pustego posta nie można opublikować.'
   },
   en:{
@@ -1298,6 +1316,7 @@ const profileTranslations={
     loading:'Loading...',
     postCopied:'Post link copied.',
     share:'Share',
+    deletePost:'Delete',
     emptyPost:'You cannot publish an empty post.'
   }
 };
