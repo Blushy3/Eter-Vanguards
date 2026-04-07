@@ -171,8 +171,8 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 .lightbox-close{position:absolute;top:20px;right:24px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s}
 .lightbox-close:hover{transform:rotate(90deg);background:rgba(255,70,85,.2)}
 .post-view-modal{width:min(980px,calc(100vw - 28px));max-height:min(88vh,920px);padding:24px}
-.post-view-wrap{display:grid;grid-template-columns:minmax(0,.95fr) minmax(320px,1.05fr);gap:18px;align-items:start}
-.post-view-image{width:100%;height:min(68vh,640px);border-radius:18px;object-fit:contain;border:1px solid var(--card-border);display:none;background:rgba(0,0,0,.22);padding:10px}
+.post-view-wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:18px;align-items:start}
+.post-view-image{width:100%;height:min(68vh,640px);border-radius:18px;object-fit:cover;border:1px solid var(--card-border);display:none;background:var(--surface-contrast)}
 .post-view-image.visible{display:block}
 .post-view-title{font-size:24px;font-weight:700;line-height:1.15}
 .post-view-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted-text)}
@@ -195,15 +195,10 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 #mapModal{width:min(980px,calc(100vw - 28px));padding:18px}
 .map-modal-header{justify-content:flex-end;margin-bottom:12px}
 .map-modal-header h3{display:none}
-.modal-map-img{width:100%;height:min(72vh,760px);border-radius:22px;display:block;object-fit:contain;object-position:center;background:rgba(0,0,0,.18);padding:10px}
+.modal-map-img{width:100%;height:min(72vh,760px);border-radius:18px;display:block;object-fit:cover;object-position:center;background:var(--surface-contrast)}
 
 /* LOGIN */
 .login-form{display:flex;flex-direction:column;gap:14px;padding:8px 0}
-#loginModal .login-form{gap:16px}
-#loginModal .login-title{margin:6px 0 10px}
-#loginModal .login-input{background:rgba(255,241,176,.96);color:#17151f;border-color:rgba(255,255,255,.24)}
-#loginModal .login-input::placeholder{color:rgba(23,21,31,.45)}
-#loginModal .login-btn{margin-top:8px}
 .login-field{display:flex;flex-direction:column;gap:6px}
 .login-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-text)}
 .login-input{padding:12px 16px;border-radius:12px;border:1px solid var(--card-border);background:var(--card-bg-strong);color:var(--text-color);font:inherit;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
@@ -413,19 +408,17 @@ body.light-theme .player-name{font-weight:600}
   <div class="modal-header"><h3 id="postViewLabel">Podgląd posta</h3><button class="modal-close" onclick="closePostView()">×</button></div>
   <div class="post-view-wrap">
     <img class="post-view-image" id="postViewImage" alt="">
-    <div class="post-view-body">
-      <div class="post-view-title" id="postViewTitle"></div>
-      <div class="post-view-meta"><span id="postViewAuthor"></span><span id="postViewDate"></span></div>
-      <div class="post-view-text" id="postViewText"></div>
-    </div>
+    <div class="post-view-title" id="postViewTitle"></div>
+    <div class="post-view-meta"><span id="postViewAuthor"></span><span id="postViewDate"></span></div>
+    <div class="post-view-text" id="postViewText"></div>
   </div>
 </div>
 <div class="control-panel">
   <button class="control-action" id="loginToggle" type="button" style="padding-left:14px;padding-right:16px">
     <span class="login-action-avatar" id="loginAvatar">?</span>
-    <span class="login-action-text"><span class="login-action-label">Dostęp</span><span class="login-action-value" id="loginActionValue">Odblokuj</span></span>
+    <span class="login-action-text"><span class="login-action-label">Konto</span><span class="login-action-value" id="loginActionValue">Zaloguj</span></span>
   </button>
-  <button class="control-action post-trigger" id="postTrigger" type="button">Nowy post</button>
+  <button class="control-action post-trigger" id="postTrigger" type="button">✦ Nowy post</button>
   <button class="control-action theme-toggle" id="themeToggle" type="button">
     <span class="theme-toggle-indicator"></span>
     <span class="theme-toggle-text"><span class="theme-toggle-label">Motyw</span><span class="theme-toggle-value" id="themeToggleValue">Ciemny</span></span>
@@ -990,7 +983,6 @@ window.submitPost=async function(){
   let imageUrl=null;
   err.textContent='';
   if(!title&&!emoji&&!content&&!file){err.textContent=T().emptyPostError;return;}
-  if(file&&file.size>5*1024*1024){err.textContent='Maks. 5 MB dla grafiki posta.';return;}
   const finalContent=`${isPremier?`${PREMIER_MARKER} `:''}${content}`.trim();
   btn.disabled=true;btn.textContent='Publikowanie...';
   try{
@@ -1147,6 +1139,20 @@ function applyTheme(theme){
 function enhanceIndexUi(){
   const mapHeader=document.querySelector('#mapModal .modal-header');
   if(mapHeader)mapHeader.classList.add('map-modal-header');
+
+  const postViewWrap=document.querySelector('#postViewModal .post-view-wrap');
+  const image=document.getElementById('postViewImage');
+  const title=document.getElementById('postViewTitle');
+  const meta=title?.nextElementSibling;
+  const text=document.getElementById('postViewText');
+  if(postViewWrap&&image&&title&&meta&&text&&!postViewWrap.querySelector('.post-view-body')){
+    const body=document.createElement('div');
+    body.className='post-view-body';
+    body.appendChild(title);
+    body.appendChild(meta);
+    body.appendChild(text);
+    postViewWrap.appendChild(body);
+  }
 
   const loginLabel=document.querySelector('.login-action-label');
   const loginValue=document.getElementById('loginActionValue');
