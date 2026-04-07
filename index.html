@@ -136,6 +136,15 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 .post-meta.has-badge{align-items:flex-start;flex-direction:column}
 .post-meta-top{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
 .premier-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:linear-gradient(135deg,#fff1a8,#ffcc58);color:#4a3400;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;align-self:flex-start}
+.post-text{position:relative}
+.post-text.is-collapsed{max-height:130px;overflow:hidden}
+.post-text.is-collapsed::after{content:'';position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(180deg,rgba(20,20,28,0),rgba(20,20,28,.96))}
+.post-expand{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--card-border);background:rgba(255,255,255,.04);color:var(--text-color);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease}
+.post-expand:hover{transform:translateY(-1px);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24)}
+.center-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.92);min-width:260px;max-width:min(92vw,420px);padding:16px 18px;border-radius:18px;border:1px solid var(--card-border-strong);background:var(--menu-bg);backdrop-filter:blur(18px);box-shadow:0 24px 60px rgba(10,13,24,.22);opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:4200;text-align:center}
+.center-toast.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.center-toast-title{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-text);margin-bottom:8px}
+.center-toast-text{font-size:15px;font-weight:700;color:var(--text-color)}
 .post-author{color:var(--accent);text-decoration:none;font-weight:700}
 .post-text{font-size:13px;line-height:1.65;color:var(--text-color)}
 .post-actions{display:flex;align-items:center;gap:10px;padding-top:4px}
@@ -370,6 +379,17 @@ body.light-theme .player-name{font-weight:600}
     <button class="refresh-confirm-btn confirm" id="refreshConfirmBtn">Odśwież</button>
   </div>
 </div>
+<div class="center-toast" id="actionToast"><div class="center-toast-title" id="actionToastTitle">Gotowe</div><div class="center-toast-text" id="actionToastText">Skopiowano</div></div>
+<div class="modal" id="deleteConfirmModal">
+  <div class="modal-header"><h3 id="deleteConfirmTitle">Usuń post</h3><button class="modal-close" onclick="hideDeleteConfirm()">×</button></div>
+  <div class="login-form">
+    <div class="refresh-confirm-text" id="deleteConfirmText">Czy na pewno chcesz to zrobić? Nie będzie dało się tego cofnąć.</div>
+    <div class="refresh-confirm-actions">
+      <button class="refresh-confirm-btn" type="button" onclick="hideDeleteConfirm()" id="deleteCancelBtn">Anuluj</button>
+      <button class="refresh-confirm-btn confirm" type="button" id="deleteConfirmBtn">Usuń</button>
+    </div>
+  </div>
+</div>
 <div class="control-panel">
   <button class="control-action" id="loginToggle" type="button" style="padding-left:14px;padding-right:16px">
     <span class="login-action-avatar" id="loginAvatar">?</span>
@@ -581,6 +601,7 @@ const postLikeState=new Map();
 const PROFILE_CFG_PREFIX='__cfg__';
 const PREMIER_MARKER='[[PREMIER]]';
 const profilePostSkinCache=new Map();
+let pendingDeleteAction=null;
 const viewerLikeKey=localStorage.getItem('eter-viewer-key')||crypto.randomUUID();
 localStorage.setItem('eter-viewer-key',viewerLikeKey);
 function getPostTitle(post){return (post.title||'').trim();}
@@ -597,6 +618,24 @@ function parseProfileConfig(rawLinks=[]){
     }
   });
   return config;
+}
+function showActionToast(message,title=null){
+  const toast=document.getElementById('actionToast');
+  document.getElementById('actionToastTitle').textContent=title||(currentLang==='pl'?'Gotowe':'Done');
+  document.getElementById('actionToastText').textContent=message;
+  toast.classList.add('visible');
+  clearTimeout(showActionToast._timer);
+  showActionToast._timer=setTimeout(()=>toast.classList.remove('visible'),1700);
+}
+function askDeleteConfirmation(onConfirm){
+  pendingDeleteAction=onConfirm;
+  blurOverlay.classList.add('active');
+  document.getElementById('deleteConfirmModal').classList.add('active');
+}
+window.hideDeleteConfirm=function(){
+  pendingDeleteAction=null;
+  document.getElementById('deleteConfirmModal').classList.remove('active');
+  if(!document.getElementById('loginModal').classList.contains('active')&&!document.getElementById('postModal').classList.contains('active'))blurOverlay.classList.remove('active');
 }
 
 function makeGalleryItem(item){
@@ -638,13 +677,17 @@ function makePostCard(post){
   if(emoji)parts.push(`<div class="post-emoji">${escapeHtml(emoji)}</div>`);
   if(title)parts.push(`<div class="post-title">${escapeHtml(title)}</div>`);
   parts.push(`<div class="post-meta${premierBadge?' has-badge':''}"><div class="post-meta-top"><a class="post-author" href="profil.html?user=${encodeURIComponent(author)}">${escapeHtml(author)}</a><span>${fmtDate(post.created_at||new Date().toISOString())}</span></div>${premierBadge}</div>`);
-  if(body)parts.push(`<div class="post-text">${escapeHtml(body)}</div>`);
+  const longPost=body.length>260;
+  if(body)parts.push(`<div class="post-text${longPost?' is-collapsed':''}">${escapeHtml(body)}</div>`);
+  if(longPost)parts.push(`<button class="post-expand" type="button">${currentLang==='pl'?'Czytaj':T().readMore}</button>`);
   parts.push(`<div class="post-actions"><button class="post-action${liked?' liked':''}" type="button" data-action="like"><span class="post-action-icon">❤</span><span>${likes}</span></button>${showShare?`<button class="post-action shareable" type="button" data-action="share"><span class="post-action-icon">↗</span><span>${T().sharePost}</span></button>`:''}${canDelete?`<button class="post-action" type="button" data-action="delete"><span class="post-action-icon">✕</span><span>${T().deletePost}</span></button>`:''}</div>`);
   el.innerHTML=`${image}<div class="post-body">${parts.join('')}</div>`;
   el.classList.toggle('is-minimal',!emoji&&!title&&!body);
   const img=el.querySelector('img');
   if(img)img.addEventListener('click',()=>openLightbox(post.image_url));
   const actions=el.querySelector('.post-actions');
+  const expandBtn=el.querySelector('.post-expand');
+  const textEl=el.querySelector('.post-text');
   if(actions){
     const likeBtn=actions.querySelector('[data-action="like"]');
     const shareBtn=actions.querySelector('[data-action="share"]');
@@ -652,6 +695,18 @@ function makePostCard(post){
     if(likeBtn)likeBtn.addEventListener('click',()=>handlePostLike(post,likeBtn));
     if(shareBtn)shareBtn.addEventListener('click',()=>sharePost(post));
     if(deleteBtn)deleteBtn.addEventListener('click',()=>deletePost(post));
+  }
+  if(expandBtn&&textEl){
+    const toggleExpand=()=>{
+      const collapsed=textEl.classList.toggle('is-collapsed');
+      expandBtn.textContent=collapsed?(currentLang==='pl'?'Czytaj':T().readMore):(currentLang==='pl'?'Zwiń':T().showLess);
+    };
+    expandBtn.addEventListener('click',toggleExpand);
+    textEl.addEventListener('click',toggleExpand);
+    el.addEventListener('click',e=>{
+      if(e.target.closest('.post-action')||e.target.closest('.post-media')||e.target.closest('.post-expand'))return;
+      toggleExpand();
+    });
   }
   return el;
 }
@@ -692,7 +747,7 @@ function handlePostLike(post,button){
 
 async function sharePost(post){
   if(!postHasShareContent(post)){return;}
-  const url=`${location.origin}${location.pathname.replace(/index\.html?$/,'')}profil.html?user=${encodeURIComponent(post.username||'')}`;
+  const url=`${location.origin}${location.pathname.replace(/index\.html?$/,'')}profil.html?user=${encodeURIComponent(post.username||'')}#post-${post.id||''}`;
   const title=getPostTitle(post);
   const body=getPostBody(post);
   const emoji=getPostEmoji(post);
@@ -700,7 +755,7 @@ async function sharePost(post){
   if(navigator.share){
     try{await navigator.share({title:title||'Post',text:text||url,url});return;}catch{}
   }
-  try{await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);alert(T().postCopied);}
+  try{await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);showActionToast(currentLang==='pl'?'Poprawnie skopiowano link do posta.':'Post link copied successfully.');}
   catch{alert(url);}
 }
 
@@ -760,6 +815,27 @@ function renderPosts(){
     btn.style.display='none';
   }
 }
+
+deletePost=async function(post){
+  if(!uploadAccess?.username||post.username!==uploadAccess.username)return;
+  askDeleteConfirmation(async()=>{
+    const { data, error } = await supabase.rpc('delete_post_by_code',{
+      p_username:uploadAccess.username,
+      p_code:uploadAccess.code,
+      p_post_id:post.id
+    });
+    if(error){
+      alert(`Błąd usuwania: ${error.message}`);
+      return;
+    }
+    if(data===false){
+      alert(currentLang==='pl'?'Nie udało się usunąć posta.':'Could not delete the post.');
+      return;
+    }
+    showActionToast(currentLang==='pl'?'Post został usunięty.':'Post deleted.');
+    await loadPosts();
+  });
+};
 
 window.togglePosts=function(){
   postsExpanded=!postsExpanded;
@@ -825,6 +901,11 @@ const profileDropdown=document.getElementById('profileDropdown');
 const refreshConfirm=document.getElementById('refreshConfirm');
 const loginToggle=document.getElementById('loginToggle');
 const refreshButton=document.getElementById('refreshButton');
+document.getElementById('deleteConfirmBtn').addEventListener('click',async()=>{
+  const action=pendingDeleteAction;
+  hideDeleteConfirm();
+  if(action)await action();
+});
 
 function closeAllPopups(){refreshConfirm.classList.remove('active');profileDropdown.classList.remove('active');document.getElementById('menu').classList.remove('active');}
 function openCodeModal(prefill=''){
@@ -964,7 +1045,7 @@ function updateHistoryBtn(){
 // ---- I18N ----
 const translations={
   pl:{infoTitle:'Info',dateLabel:'Data',timeLabel:'Godzina',matchesLabel:'Mecze',mapLabel:'Mapa',premierScore:'Premier Score',scoreInfo:'Min. 500 Premier Score, aby zakwalifikować się do play-offs',teamTitle:'Ekipa',historyTitle:'Historia',galleryTitle:'Galeria Premier',postsTitle:'Posty',expand:'Rozwiń',collapse:'Zwiń',usefulLinks:'Przydatne linki',themeLabel:'Motyw',themeDark:'Ciemny',themeLight:'Jasny',languageLabel:'Język',mapTitlePrefix:'Mapa',titleSubtitle:'Panel drużyny premierowej',reserveBadge:'Rezerwowy',sharePost:'Udostępnij',deletePost:'Usuń',postCopied:'Link do posta skopiowany.',emptyPostError:'Pustego posta nie można opublikować.',premierPost:'Post premierowy'},
-  en:{infoTitle:'Info',dateLabel:'Date',timeLabel:'Time',matchesLabel:'Matches',mapLabel:'Map',premierScore:'Premier Score',scoreInfo:'At least 500 Premier Score is required to qualify for playoffs',teamTitle:'Team',historyTitle:'History',galleryTitle:'Premier Gallery',postsTitle:'Posts',expand:'Expand',collapse:'Collapse',usefulLinks:'Useful links',themeLabel:'Theme',themeDark:'Dark',themeLight:'Light',languageLabel:'Language',mapTitlePrefix:'Map',titleSubtitle:'Premier Team Dashboard',reserveBadge:'Reserve',sharePost:'Share',deletePost:'Delete',postCopied:'Post link copied.',emptyPostError:'You cannot publish an empty post.',premierPost:'Premier post'}
+  en:{infoTitle:'Info',dateLabel:'Date',timeLabel:'Time',matchesLabel:'Matches',mapLabel:'Map',premierScore:'Premier Score',scoreInfo:'At least 500 Premier Score is required to qualify for playoffs',teamTitle:'Team',historyTitle:'History',galleryTitle:'Premier Gallery',postsTitle:'Posts',expand:'Expand',collapse:'Collapse',usefulLinks:'Useful links',themeLabel:'Theme',themeDark:'Dark',themeLight:'Light',languageLabel:'Language',mapTitlePrefix:'Map',titleSubtitle:'Premier Team Dashboard',reserveBadge:'Reserve',sharePost:'Share',deletePost:'Delete',postCopied:'Post link copied.',emptyPostError:'You cannot publish an empty post.',premierPost:'Premier post',readMore:'Read more',showLess:'Show less'}
 };
 function T(){return translations[currentLang];}
 
@@ -982,6 +1063,16 @@ function applyLang(lang){
   if(pb&&pb.style.display!=='none'){const expanded=document.getElementById('postsHidden').classList.contains('expanded');pb.innerHTML=`${expanded?T().collapse:T().expand} <span class="expand-arrow${expanded?' rotated':''}" id="postsArrow">▼</span>`;}
   const premierLabel=document.getElementById('postPremierLabel');
   if(premierLabel)premierLabel.textContent=T().premierPost;
+  const deleteTitle=document.getElementById('deleteConfirmTitle');
+  const deleteText=document.getElementById('deleteConfirmText');
+  const deleteCancel=document.getElementById('deleteCancelBtn');
+  const deleteConfirm=document.getElementById('deleteConfirmBtn');
+  const toastTitle=document.getElementById('actionToastTitle');
+  if(deleteTitle)deleteTitle.textContent=lang==='pl'?'Usuń post':'Delete post';
+  if(deleteText)deleteText.textContent=lang==='pl'?'Czy na pewno chcesz to zrobić? Nie będzie dało się tego cofnąć.':'Are you sure you want to do this? This cannot be undone.';
+  if(deleteCancel)deleteCancel.textContent=lang==='pl'?'Anuluj':'Cancel';
+  if(deleteConfirm)deleteConfirm.textContent=lang==='pl'?'Usuń':'Delete';
+  if(toastTitle)toastTitle.textContent=lang==='pl'?'Gotowe':'Done';
 }
 
 function applyTheme(theme){
