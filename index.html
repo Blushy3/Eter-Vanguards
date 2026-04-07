@@ -149,7 +149,8 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 .modal h3{text-align:left;margin:0;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-text)}
 .modal-close{width:36px;height:36px;border:1px solid var(--card-border);border-radius:50%;background:var(--card-bg-strong);color:var(--text-color);font:inherit;font-size:22px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .2s,background .2s,border-color .2s}
 .modal-close:hover{transform:rotate(90deg);background:rgba(255,70,85,.12);border-color:rgba(255,70,85,.28)}
-.modal-map-img{width:100%;border-radius:16px;margin-top:8px;display:block}
+#mapModal{width:min(860px,calc(100vw - 28px));padding:24px}
+.modal-map-img{width:100%;max-height:72vh;border-radius:18px;margin-top:8px;display:block;object-fit:contain}
 
 /* LOGIN */
 .login-form{display:flex;flex-direction:column;gap:14px;padding:8px 0}
@@ -284,7 +285,7 @@ body.light-theme .player-name{font-weight:600}
       </h3>
       <div class="posts-grid" id="postsVisible"></div>
       <div class="posts-hidden-items" id="postsHidden"></div>
-      <div id="postsEmpty" class="posts-empty" style="display:none">Na razie nie ma jeszcze żadnych postów premierowych.</div>
+      <div id="postsEmpty" class="posts-empty" style="display:none">Na razie nie ma jeszcze żadnych postów.</div>
     </div>
     <div class="card links-panel dashboard-card full">
       <h3 data-i18n="usefulLinks">Przydatne linki</h3>
@@ -599,6 +600,7 @@ function renderPosts(){
   const empty=document.getElementById('postsEmpty');
   const btn=document.getElementById('postsExpandBtn');
   vis.innerHTML='';hid.innerHTML='';
+  empty.textContent='Na razie nie ma jeszcze żadnych postów.';
   if(!postsAll.length){empty.style.display='block';btn.style.display='none';return;}
   empty.style.display='none';
   postsAll.forEach((post,i)=>{
