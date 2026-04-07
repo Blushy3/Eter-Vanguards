@@ -124,16 +124,26 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 .post-media img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;transition:transform .35s}
 .post-card:hover .post-media img{transform:scale(1.04)}
 .post-body{display:flex;flex-direction:column;gap:10px;padding:16px}
-.post-emoji{font-size:18px}
+.post-emoji{font-size:18px;line-height:1}
 .post-title{font-size:17px;font-weight:700;color:var(--text-color)}
 .post-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted-text)}
 .post-author{color:var(--accent);text-decoration:none;font-weight:700}
 .post-text{font-size:13px;line-height:1.65;color:var(--text-color)}
 .post-actions{display:flex;align-items:center;gap:10px;padding-top:4px}
-.post-action{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--card-border);background:transparent;color:var(--muted-text);font:inherit;font-size:12px;font-weight:600}
-.post-action.shareable{cursor:pointer}
+.post-action{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--card-border);background:transparent;color:var(--muted-text);font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:transform .2s ease,background .25s ease,border-color .25s ease,box-shadow .25s ease,color .25s ease}
+.post-action:hover{transform:translateY(-2px) scale(1.02);border-color:rgba(255,70,85,.3);background:rgba(255,70,85,.08);box-shadow:0 12px 24px rgba(10,13,24,.14)}
+.post-action:active{transform:translateY(0) scale(.97)}
+.post-action.liked{color:#ff7a85;border-color:rgba(255,122,133,.45);background:rgba(255,70,85,.12);box-shadow:0 12px 28px rgba(255,70,85,.16)}
+.post-action.liked .post-action-icon{animation:heartBeat .4s ease}
+.post-action.shareable:hover .post-action-icon{animation:shareNudge .38s ease}
+.post-action:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.post-action-icon{display:inline-flex;align-items:center;justify-content:center;min-width:14px}
+.post-card.is-minimal .post-body{gap:8px}
+.post-card.is-minimal .post-actions{padding-top:0}
 .posts-empty{text-align:center;padding:36px 20px;color:var(--muted-text);font-size:14px;line-height:1.7}
 .posts-hidden-items{display:none}.posts-hidden-items.expanded{display:contents}
+@keyframes heartBeat{0%{transform:scale(1)}35%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes shareNudge{0%{transform:translateX(0)}40%{transform:translateX(3px)}100%{transform:translateX(0)}}
 
 /* LIGHTBOX */
 .lightbox{position:fixed;inset:0;z-index:3000;background:rgba(5,8,18,.88);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(10px)}
@@ -541,7 +551,7 @@ window.handleLogin=async function(){
       await doUpload(file);
     }
   }catch(error){
-    err.textContent='Blad dostepu: '+error.message;
+    err.textContent='Błąd dostępu: '+error.message;
   }finally{
     btn.disabled=false;
     btn.textContent='Odblokuj';
@@ -556,6 +566,27 @@ window.handleLogout=function(){
 
 // ---- GALLERY ----
 function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});}
+const POST_LIKES_KEY='eter-liked-posts';
+function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char]));}
+function getPostId(post){return String(post.id??`${post.username||'eter'}|${post.created_at||''}|${post.title||''}|${post.image_url||''}`);}
+function getLikedPosts(){try{return JSON.parse(localStorage.getItem(POST_LIKES_KEY)||'[]');}catch{return [];}}
+function setLikedPosts(ids){localStorage.setItem(POST_LIKES_KEY,JSON.stringify(ids));}
+function isPostLiked(post){return getLikedPosts().includes(getPostId(post));}
+function toggleStoredLike(post){
+  const postId=getPostId(post);
+  const liked=getLikedPosts();
+  if(liked.includes(postId)){
+    setLikedPosts(liked.filter(id=>id!==postId));
+    return false;
+  }
+  liked.push(postId);
+  setLikedPosts(liked);
+  return true;
+}
+function getPostTitle(post){return (post.title||'').trim();}
+function getPostBody(post){return (post.content||post.description||'').trim();}
+function getPostEmoji(post){return (post.emoji||'').trim();}
+function postHasShareContent(post){return Boolean(getPostTitle(post)||getPostBody(post)||post.image_url);}
 
 function makeGalleryItem(item){
   const el=document.createElement('div');
@@ -597,31 +628,55 @@ function renderGallery(){
 function makePostCard(post){
   const el=document.createElement('article');
   el.className='post-card';
-  const emoji=post.emoji||'📝';
-  const title=post.title||'Nowy post';
-  const body=post.content||post.description||'';
+  const emoji=getPostEmoji(post);
+  const title=getPostTitle(post);
+  const body=getPostBody(post);
   const author=post.username||'eter';
-  const image=post.image_url?`<div class="post-media"><img src="${post.image_url}" alt="${title}" loading="lazy"></div>`:'';
-  const likes=Number(post.likes_count||0);
-  el.innerHTML=`${image}<div class="post-body"><div class="post-emoji">${emoji}</div><div class="post-title">${title}</div><div class="post-meta"><a class="post-author" href="profil.html?user=${encodeURIComponent(author)}">${author}</a><span>${fmtDate(post.created_at||new Date().toISOString())}</span></div><div class="post-text">${body||'Bez opisu.'}</div><div class="post-actions"><button class="post-action" type="button">❤ ${likes}</button><button class="post-action" type="button">↗ Udostepnij</button></div></div>`;
+  const altText=title||body||author;
+  const image=post.image_url?`<div class="post-media"><img src="${post.image_url}" alt="${escapeHtml(altText)}" loading="lazy"></div>`:'';
+  const baseLikes=Number(post.likes_count||0);
+  const liked=isPostLiked(post);
+  const likes=baseLikes+(liked?1:0);
+  const showShare=postHasShareContent(post);
+  const parts=[];
+  if(emoji)parts.push(`<div class="post-emoji">${escapeHtml(emoji)}</div>`);
+  if(title)parts.push(`<div class="post-title">${escapeHtml(title)}</div>`);
+  parts.push(`<div class="post-meta"><a class="post-author" href="profil.html?user=${encodeURIComponent(author)}">${escapeHtml(author)}</a><span>${fmtDate(post.created_at||new Date().toISOString())}</span></div>`);
+  if(body)parts.push(`<div class="post-text">${escapeHtml(body)}</div>`);
+  parts.push(`<div class="post-actions"><button class="post-action${liked?' liked':''}" type="button" data-action="like"><span class="post-action-icon">❤</span><span>${likes}</span></button>${showShare?`<button class="post-action shareable" type="button" data-action="share"><span class="post-action-icon">↗</span><span>${T().sharePost}</span></button>`:''}</div>`);
+  el.innerHTML=`${image}<div class="post-body">${parts.join('')}</div>`;
+  el.classList.toggle('is-minimal',!emoji&&!title&&!body);
   const img=el.querySelector('img');
   if(img)img.addEventListener('click',()=>openLightbox(post.image_url));
   const actions=el.querySelector('.post-actions');
   if(actions){
-    const shareBtn=actions.lastElementChild;
-    if(shareBtn)shareBtn.classList.add('shareable');
+    const likeBtn=actions.querySelector('[data-action="like"]');
+    const shareBtn=actions.querySelector('[data-action="share"]');
+    if(likeBtn)likeBtn.addEventListener('click',()=>handlePostLike(post,likeBtn));
     if(shareBtn)shareBtn.addEventListener('click',()=>sharePost(post));
   }
   return el;
 }
 
+function handlePostLike(post,button){
+  const likedNow=toggleStoredLike(post);
+  const countEl=button.querySelector('span:last-child');
+  const baseLikes=Number(post.likes_count||0);
+  if(countEl)countEl.textContent=String(baseLikes+(likedNow?1:0));
+  button.classList.toggle('liked',likedNow);
+}
+
 async function sharePost(post){
+  if(!postHasShareContent(post)){return;}
   const url=`${location.origin}${location.pathname.replace(/index\.html?$/,'')}profil.html?user=${encodeURIComponent(post.username||'')}`;
-  const text=`${post.emoji||'📝'} ${post.title||'Post'}${post.content?` - ${post.content}`:''}`;
+  const title=getPostTitle(post);
+  const body=getPostBody(post);
+  const emoji=getPostEmoji(post);
+  const text=[emoji,title,body].filter(Boolean).join(' ').trim();
   if(navigator.share){
-    try{await navigator.share({title:post.title||'Post',text,url});return;}catch{}
+    try{await navigator.share({title:title||'Post',text:text||url,url});return;}catch{}
   }
-  try{await navigator.clipboard.writeText(`${text}\n${url}`);alert('Link do posta skopiowany.');}
+  try{await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);alert(T().postCopied);}
   catch{alert(url);}
 }
 
@@ -755,6 +810,7 @@ window.submitPost=async function(){
   const file=document.getElementById('postImageInput').files[0]||null;
   let imageUrl=null;
   err.textContent='';
+  if(!title&&!emoji&&!content&&!file){err.textContent=T().emptyPostError;return;}
   btn.disabled=true;btn.textContent='Publikowanie...';
   try{
     if(file){
@@ -781,7 +837,7 @@ window.submitPost=async function(){
     closePostModal();
     await loadPosts();
   }catch(error){
-    err.textContent='Blad publikacji: '+error.message;
+    err.textContent='Błąd publikacji: '+error.message;
   }finally{
     btn.disabled=false;btn.textContent='Opublikuj';
   }
@@ -858,8 +914,8 @@ function updateHistoryBtn(){
 
 // ---- I18N ----
 const translations={
-  pl:{infoTitle:'Info',dateLabel:'Data',timeLabel:'Godzina',matchesLabel:'Mecze',mapLabel:'Mapa',premierScore:'Premier Score',scoreInfo:'Min. 500 Premier Score aby zakwalifikować się do playoffs',teamTitle:'Ekipa',historyTitle:'Historia',galleryTitle:'Galeria Premier',postsTitle:'Posty',expand:'Rozwin',collapse:'Zwin',usefulLinks:'Przydatne linki',themeLabel:'Motyw',themeDark:'Ciemny',themeLight:'Jasny',languageLabel:'Język',mapTitlePrefix:'Mapa',titleSubtitle:'Panel drużyny premierowej',reserveBadge:'Rezerwowy'},
-  en:{infoTitle:'Info',dateLabel:'Date',timeLabel:'Time',matchesLabel:'Matches',mapLabel:'Map',premierScore:'Premier Score',scoreInfo:'Minimum 500 Premier Score is required to qualify for playoffs',teamTitle:'Team',historyTitle:'History',galleryTitle:'Premier Gallery',postsTitle:'Posts',expand:'Expand',collapse:'Collapse',usefulLinks:'Useful links',themeLabel:'Theme',themeDark:'Dark',themeLight:'Light',languageLabel:'Language',mapTitlePrefix:'Map',titleSubtitle:'Premier Team Dashboard',reserveBadge:'Reserve'}
+  pl:{infoTitle:'Info',dateLabel:'Data',timeLabel:'Godzina',matchesLabel:'Mecze',mapLabel:'Mapa',premierScore:'Premier Score',scoreInfo:'Min. 500 Premier Score, aby zakwalifikować się do play-offs',teamTitle:'Ekipa',historyTitle:'Historia',galleryTitle:'Galeria Premier',postsTitle:'Posty',expand:'Rozwiń',collapse:'Zwiń',usefulLinks:'Przydatne linki',themeLabel:'Motyw',themeDark:'Ciemny',themeLight:'Jasny',languageLabel:'Język',mapTitlePrefix:'Mapa',titleSubtitle:'Panel drużyny premierowej',reserveBadge:'Rezerwowy',sharePost:'Udostępnij',postCopied:'Link do posta skopiowany.',emptyPostError:'Pustego posta nie można opublikować.'},
+  en:{infoTitle:'Info',dateLabel:'Date',timeLabel:'Time',matchesLabel:'Matches',mapLabel:'Map',premierScore:'Premier Score',scoreInfo:'At least 500 Premier Score is required to qualify for playoffs',teamTitle:'Team',historyTitle:'History',galleryTitle:'Premier Gallery',postsTitle:'Posts',expand:'Expand',collapse:'Collapse',usefulLinks:'Useful links',themeLabel:'Theme',themeDark:'Dark',themeLight:'Light',languageLabel:'Language',mapTitlePrefix:'Map',titleSubtitle:'Premier Team Dashboard',reserveBadge:'Reserve',sharePost:'Share',postCopied:'Post link copied.',emptyPostError:'You cannot publish an empty post.'}
 };
 function T(){return translations[currentLang];}
 
