@@ -569,6 +569,8 @@ function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL',
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char]));}
 function getPostId(post){return String(post.id??`${post.username||'eter'}|${post.created_at||''}|${post.title||''}|${post.image_url||''}`);}
 const postLikeState=new Map();
+const viewerLikeKey=localStorage.getItem('eter-viewer-key')||crypto.randomUUID();
+localStorage.setItem('eter-viewer-key',viewerLikeKey);
 function getPostTitle(post){return (post.title||'').trim();}
 function getPostBody(post){return (post.content||post.description||'').trim();}
 function getPostEmoji(post){return (post.emoji||'').trim();}
@@ -648,22 +650,33 @@ function makePostCard(post){
 }
 
 function handlePostLike(post,button){
-  const likedNow=!Boolean(postLikeState.get(getPostId(post)));
+  if(!post.id){alert('Tego posta nie da się jeszcze polubić.');return;}
+  const previousLiked=Boolean(postLikeState.get(getPostId(post)));
   const countEl=button.querySelector('span:last-child');
   const previousCount=Number(post.likes_count||0);
-  const nextCount=Math.max(0,previousCount+(likedNow?1:-1));
+  const optimisticLiked=!previousLiked;
+  const nextCount=Math.max(0,previousCount+(optimisticLiked?1:-1));
   button.disabled=true;
-  postLikeState.set(getPostId(post),likedNow);
-  button.classList.toggle('liked',likedNow);
+  postLikeState.set(getPostId(post),optimisticLiked);
+  button.classList.toggle('liked',optimisticLiked);
   if(countEl)countEl.textContent=String(nextCount);
-  supabase.from('posts').update({ likes_count: nextCount }).eq('id',post.id).select('likes_count').single()
+  supabase.rpc('toggle_post_like',{
+    p_post_id:post.id,
+    p_viewer_key:viewerLikeKey,
+    p_viewer_username:uploadAccess?.username||null
+  })
     .then(({ data, error })=>{
       if(error)throw error;
-      post.likes_count=Number(data?.likes_count??nextCount);
+      const liked=Boolean(data?.liked);
+      const likesCount=Number(data?.likes_count??nextCount);
+      postLikeState.set(getPostId(post),liked);
+      button.classList.toggle('liked',liked);
+      if(countEl)countEl.textContent=String(likesCount);
+      post.likes_count=likesCount;
     })
     .catch(error=>{
-      postLikeState.set(getPostId(post),!likedNow);
-      button.classList.toggle('liked',!likedNow);
+      postLikeState.set(getPostId(post),previousLiked);
+      button.classList.toggle('liked',previousLiked);
       if(countEl)countEl.textContent=String(previousCount);
       alert(`Błąd polubienia: ${error.message}`);
     })
@@ -688,9 +701,17 @@ async function deletePost(post){
   if(!uploadAccess?.username||post.username!==uploadAccess.username)return;
   const confirmed=confirm(currentLang==='pl'?'Usunąć ten post?':'Delete this post?');
   if(!confirmed)return;
-  const { error } = await supabase.from('posts').delete().eq('id',post.id).eq('username',uploadAccess.username);
+  const { data, error } = await supabase.rpc('delete_post_by_code',{
+    p_username:uploadAccess.username,
+    p_code:uploadAccess.code,
+    p_post_id:post.id
+  });
   if(error){
     alert(`Błąd usuwania: ${error.message}`);
+    return;
+  }
+  if(data===false){
+    alert(currentLang==='pl'?'Nie udało się usunąć posta.':'Could not delete the post.');
     return;
   }
   await loadPosts();
