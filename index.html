@@ -566,23 +566,9 @@ window.handleLogout=function(){
 
 // ---- GALLERY ----
 function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});}
-const POST_LIKES_KEY='eter-liked-posts';
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,char=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char]));}
 function getPostId(post){return String(post.id??`${post.username||'eter'}|${post.created_at||''}|${post.title||''}|${post.image_url||''}`);}
-function getLikedPosts(){try{return JSON.parse(localStorage.getItem(POST_LIKES_KEY)||'[]');}catch{return [];}}
-function setLikedPosts(ids){localStorage.setItem(POST_LIKES_KEY,JSON.stringify(ids));}
-function isPostLiked(post){return getLikedPosts().includes(getPostId(post));}
-function toggleStoredLike(post){
-  const postId=getPostId(post);
-  const liked=getLikedPosts();
-  if(liked.includes(postId)){
-    setLikedPosts(liked.filter(id=>id!==postId));
-    return false;
-  }
-  liked.push(postId);
-  setLikedPosts(liked);
-  return true;
-}
+const postLikeState=new Map();
 function getPostTitle(post){return (post.title||'').trim();}
 function getPostBody(post){return (post.content||post.description||'').trim();}
 function getPostEmoji(post){return (post.emoji||'').trim();}
@@ -635,15 +621,16 @@ function makePostCard(post){
   const altText=title||body||author;
   const image=post.image_url?`<div class="post-media"><img src="${post.image_url}" alt="${escapeHtml(altText)}" loading="lazy"></div>`:'';
   const baseLikes=Number(post.likes_count||0);
-  const liked=isPostLiked(post);
-  const likes=baseLikes+(liked?1:0);
+  const liked=Boolean(postLikeState.get(getPostId(post)));
+  const likes=baseLikes;
   const showShare=postHasShareContent(post);
+  const canDelete=uploadAccess?.username&&post.username===uploadAccess.username;
   const parts=[];
   if(emoji)parts.push(`<div class="post-emoji">${escapeHtml(emoji)}</div>`);
   if(title)parts.push(`<div class="post-title">${escapeHtml(title)}</div>`);
   parts.push(`<div class="post-meta"><a class="post-author" href="profil.html?user=${encodeURIComponent(author)}">${escapeHtml(author)}</a><span>${fmtDate(post.created_at||new Date().toISOString())}</span></div>`);
   if(body)parts.push(`<div class="post-text">${escapeHtml(body)}</div>`);
-  parts.push(`<div class="post-actions"><button class="post-action${liked?' liked':''}" type="button" data-action="like"><span class="post-action-icon">❤</span><span>${likes}</span></button>${showShare?`<button class="post-action shareable" type="button" data-action="share"><span class="post-action-icon">↗</span><span>${T().sharePost}</span></button>`:''}</div>`);
+  parts.push(`<div class="post-actions"><button class="post-action${liked?' liked':''}" type="button" data-action="like"><span class="post-action-icon">❤</span><span>${likes}</span></button>${showShare?`<button class="post-action shareable" type="button" data-action="share"><span class="post-action-icon">↗</span><span>${T().sharePost}</span></button>`:''}${canDelete?`<button class="post-action" type="button" data-action="delete"><span class="post-action-icon">✕</span><span>${T().deletePost}</span></button>`:''}</div>`);
   el.innerHTML=`${image}<div class="post-body">${parts.join('')}</div>`;
   el.classList.toggle('is-minimal',!emoji&&!title&&!body);
   const img=el.querySelector('img');
@@ -652,18 +639,35 @@ function makePostCard(post){
   if(actions){
     const likeBtn=actions.querySelector('[data-action="like"]');
     const shareBtn=actions.querySelector('[data-action="share"]');
+    const deleteBtn=actions.querySelector('[data-action="delete"]');
     if(likeBtn)likeBtn.addEventListener('click',()=>handlePostLike(post,likeBtn));
     if(shareBtn)shareBtn.addEventListener('click',()=>sharePost(post));
+    if(deleteBtn)deleteBtn.addEventListener('click',()=>deletePost(post));
   }
   return el;
 }
 
 function handlePostLike(post,button){
-  const likedNow=toggleStoredLike(post);
+  const likedNow=!Boolean(postLikeState.get(getPostId(post)));
   const countEl=button.querySelector('span:last-child');
-  const baseLikes=Number(post.likes_count||0);
-  if(countEl)countEl.textContent=String(baseLikes+(likedNow?1:0));
+  const previousCount=Number(post.likes_count||0);
+  const nextCount=Math.max(0,previousCount+(likedNow?1:-1));
+  button.disabled=true;
+  postLikeState.set(getPostId(post),likedNow);
   button.classList.toggle('liked',likedNow);
+  if(countEl)countEl.textContent=String(nextCount);
+  supabase.from('posts').update({ likes_count: nextCount }).eq('id',post.id).select('likes_count').single()
+    .then(({ data, error })=>{
+      if(error)throw error;
+      post.likes_count=Number(data?.likes_count??nextCount);
+    })
+    .catch(error=>{
+      postLikeState.set(getPostId(post),!likedNow);
+      button.classList.toggle('liked',!likedNow);
+      if(countEl)countEl.textContent=String(previousCount);
+      alert(`Błąd polubienia: ${error.message}`);
+    })
+    .finally(()=>{button.disabled=false;});
 }
 
 async function sharePost(post){
@@ -678,6 +682,18 @@ async function sharePost(post){
   }
   try{await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);alert(T().postCopied);}
   catch{alert(url);}
+}
+
+async function deletePost(post){
+  if(!uploadAccess?.username||post.username!==uploadAccess.username)return;
+  const confirmed=confirm(currentLang==='pl'?'Usunąć ten post?':'Delete this post?');
+  if(!confirmed)return;
+  const { error } = await supabase.from('posts').delete().eq('id',post.id).eq('username',uploadAccess.username);
+  if(error){
+    alert(`Błąd usuwania: ${error.message}`);
+    return;
+  }
+  await loadPosts();
 }
 
 async function loadPosts(){
@@ -914,8 +930,8 @@ function updateHistoryBtn(){
 
 // ---- I18N ----
 const translations={
-  pl:{infoTitle:'Info',dateLabel:'Data',timeLabel:'Godzina',matchesLabel:'Mecze',mapLabel:'Mapa',premierScore:'Premier Score',scoreInfo:'Min. 500 Premier Score, aby zakwalifikować się do play-offs',teamTitle:'Ekipa',historyTitle:'Historia',galleryTitle:'Galeria Premier',postsTitle:'Posty',expand:'Rozwiń',collapse:'Zwiń',usefulLinks:'Przydatne linki',themeLabel:'Motyw',themeDark:'Ciemny',themeLight:'Jasny',languageLabel:'Język',mapTitlePrefix:'Mapa',titleSubtitle:'Panel drużyny premierowej',reserveBadge:'Rezerwowy',sharePost:'Udostępnij',postCopied:'Link do posta skopiowany.',emptyPostError:'Pustego posta nie można opublikować.'},
-  en:{infoTitle:'Info',dateLabel:'Date',timeLabel:'Time',matchesLabel:'Matches',mapLabel:'Map',premierScore:'Premier Score',scoreInfo:'At least 500 Premier Score is required to qualify for playoffs',teamTitle:'Team',historyTitle:'History',galleryTitle:'Premier Gallery',postsTitle:'Posts',expand:'Expand',collapse:'Collapse',usefulLinks:'Useful links',themeLabel:'Theme',themeDark:'Dark',themeLight:'Light',languageLabel:'Language',mapTitlePrefix:'Map',titleSubtitle:'Premier Team Dashboard',reserveBadge:'Reserve',sharePost:'Share',postCopied:'Post link copied.',emptyPostError:'You cannot publish an empty post.'}
+  pl:{infoTitle:'Info',dateLabel:'Data',timeLabel:'Godzina',matchesLabel:'Mecze',mapLabel:'Mapa',premierScore:'Premier Score',scoreInfo:'Min. 500 Premier Score, aby zakwalifikować się do play-offs',teamTitle:'Ekipa',historyTitle:'Historia',galleryTitle:'Galeria Premier',postsTitle:'Posty',expand:'Rozwiń',collapse:'Zwiń',usefulLinks:'Przydatne linki',themeLabel:'Motyw',themeDark:'Ciemny',themeLight:'Jasny',languageLabel:'Język',mapTitlePrefix:'Mapa',titleSubtitle:'Panel drużyny premierowej',reserveBadge:'Rezerwowy',sharePost:'Udostępnij',deletePost:'Usuń',postCopied:'Link do posta skopiowany.',emptyPostError:'Pustego posta nie można opublikować.'},
+  en:{infoTitle:'Info',dateLabel:'Date',timeLabel:'Time',matchesLabel:'Matches',mapLabel:'Map',premierScore:'Premier Score',scoreInfo:'At least 500 Premier Score is required to qualify for playoffs',teamTitle:'Team',historyTitle:'History',galleryTitle:'Premier Gallery',postsTitle:'Posts',expand:'Expand',collapse:'Collapse',usefulLinks:'Useful links',themeLabel:'Theme',themeDark:'Dark',themeLight:'Light',languageLabel:'Language',mapTitlePrefix:'Map',titleSubtitle:'Premier Team Dashboard',reserveBadge:'Reserve',sharePost:'Share',deletePost:'Delete',postCopied:'Post link copied.',emptyPostError:'You cannot publish an empty post.'}
 };
 function T(){return translations[currentLang];}
 
