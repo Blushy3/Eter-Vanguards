@@ -229,6 +229,7 @@ linear-gradient(180deg,rgba(17,18,28,.98),rgba(13,14,24,.98));box-shadow:0 34px 
 .login-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-text)}
 .login-input{padding:13px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(34,35,46,.98),rgba(24,25,34,.98));color:#f5f7ff;font:inherit;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
 .login-input:focus{border-color:rgba(255,70,85,.5);box-shadow:0 0 0 3px rgba(255,70,85,.1)}
+#loginModal .login-input:focus,#postModal .login-input:focus,#postModal textarea.login-input:focus{border-color:rgba(255,70,85,.5)!important;box-shadow:0 0 0 3px rgba(255,70,85,.1),inset 0 1px 0 rgba(255,255,255,.03)!important}
 .login-remember{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--muted-text);user-select:none}
 .login-remember input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .login-btn{padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-soft));border:none;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.08em;transition:transform .2s,box-shadow .2s}
@@ -814,14 +815,10 @@ function handlePostLike(post,button){
 async function sharePost(post){
   if(!postHasShareContent(post)){return;}
   const url=`${location.origin}${location.pathname.replace(/index\.html?$/,'')}profil.html?user=${encodeURIComponent(post.username||'')}`;
-  const title=getPostTitle(post);
-  const body=getPostBody(post);
-  const emoji=getPostEmoji(post);
-  const text=[emoji,title,body].filter(Boolean).join(' ').trim();
   if(navigator.share){
-    try{await navigator.share({title:title||'Post',text:text||url,url});return;}catch{}
+    try{await navigator.share({title:'Profil',url});return;}catch{}
   }
-  try{await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);showActionToast(currentLang==='pl'?'Poprawnie skopiowano link do posta.':'Post link copied successfully.');}
+  try{await navigator.clipboard.writeText(url);showActionToast(currentLang==='pl'?'Poprawnie skopiowano link do profilu.':'Profile link copied successfully.');}
   catch{alert(url);}
 }
 
