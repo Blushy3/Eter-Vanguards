@@ -275,6 +275,12 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-weight
 .prof-post-meta.has-badge{align-items:flex-start;flex-direction:column}
 .prof-post-meta-top{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
 .banner-overlay-layer{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.58}
+.memory-saver-badge{position:absolute;right:18px;bottom:18px;display:none;align-items:center;gap:10px;max-width:min(78%,320px);padding:12px 14px;border-radius:18px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(135deg,color-mix(in srgb,var(--prof-accent) 18%,rgba(8,10,18,.92)),color-mix(in srgb,var(--prof-accent2) 16%,rgba(8,10,18,.86)));box-shadow:0 18px 40px rgba(5,8,18,.28);backdrop-filter:blur(16px);z-index:3}
+.memory-saver-badge.visible{display:flex}
+.memory-saver-icon{width:34px;height:34px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);font-size:18px;flex-shrink:0}
+.memory-saver-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.memory-saver-title{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#f5f7ff}
+.memory-saver-text{font-size:12px;line-height:1.35;color:rgba(240,244,255,.82)}
 .banner-overlay-stars{background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.8) 0 1px,transparent 1.5px),radial-gradient(circle at 70% 40%,rgba(185,223,255,.9) 0 1px,transparent 1.8px),radial-gradient(circle at 45% 70%,rgba(255,231,179,.8) 0 1px,transparent 1.6px);background-size:180px 180px;animation:overlayDrift 10s linear infinite}
 .banner-overlay-aurora{background:linear-gradient(120deg,rgba(124,246,214,.24),rgba(124,199,255,.18),rgba(190,154,255,.22));filter:blur(18px);animation:overlayPulse 5s ease-in-out infinite}
 .banner-overlay-grid{background-image:linear-gradient(rgba(124,199,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(124,199,255,.14) 1px,transparent 1px);background-size:34px 34px;animation:overlayDrift 9s linear infinite}
@@ -452,7 +458,7 @@ filter:blur(2px);animation:wavePulse 5.4s ease-in-out infinite}
 .prof-edit-section-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted-text);margin-bottom:12px;display:block;}
 .prof-edit-input{width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg-strong);color:var(--text-color);font:inherit;font-size:13px;outline:none;transition:border-color .2s;margin-bottom:8px;}
 .prof-edit-input:focus{border-color:var(--prof-accent);}
-.prof-edit-textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--card-border);background:var(--card-bg-strong);color:var(--text-color);font:inherit;font-size:13px;resize:vertical;min-height:70px;outline:none;transition:border-color .2s;margin-bottom:8px;}
+.prof-edit-textarea{width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--card-border);background:linear-gradient(180deg,rgba(34,35,46,.98),rgba(24,25,34,.98));color:#f5f7ff;font:inherit;font-size:13px;resize:vertical;min-height:70px;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
 .prof-edit-textarea:focus{border-color:var(--prof-accent);}
 .prof-edit-save-btn{width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,var(--prof-accent),var(--prof-accent2));border:none;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .2s,box-shadow .2s;margin-top:4px;}
 .prof-edit-save-btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px var(--prof-glow);}
@@ -543,6 +549,7 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 .modal::-webkit-scrollbar{width:8px}
 .modal::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:999px}
 .post-modal{width:min(740px,calc(100vw - 28px));padding:26px}
+.asset-source-modal{width:min(560px,calc(100vw - 28px));padding:24px}
 .modal.active{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto;}
 @media(max-width:860px){.post-view-image{height:min(38vh,300px)}.post-view-text{max-height:none}.cropper-modal{width:min(96vw,960px);height:min(86vh,720px)}.cropper-stage{min-height:300px;max-height:360px}.cropper-preview-target.avatar{width:min(280px,76%)}.cropper-actions{justify-content:flex-start}} 
 .modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
@@ -554,17 +561,18 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 .login-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-text);}
 .login-input{padding:13px 16px;border-radius:14px;border:1px solid var(--card-border);background:var(--card-bg-strong);color:var(--text-color);font:inherit;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;}
 .login-input:focus{border-color:rgba(255,70,85,.5);box-shadow:0 0 0 3px rgba(255,70,85,.1);}
-#loginModal .login-input,#postModal .login-input,#postModal textarea.login-input,.prof-edit-textarea{background:linear-gradient(180deg,rgba(245,246,250,.96),rgba(235,238,244,.94));color:#17151f;border-color:rgba(255,255,255,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
-#loginModal .login-input::placeholder,#postModal .login-input::placeholder{color:rgba(23,21,31,.45)}
+#loginModal .login-input,#postModal .login-input,#postModal textarea.login-input{background:linear-gradient(180deg,rgba(34,35,46,.98),rgba(24,25,34,.98));color:#f5f7ff;border-color:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+#loginModal .login-input::placeholder,#postModal .login-input::placeholder,.prof-edit-textarea::placeholder{color:rgba(232,236,255,.42)}
 #postModal .prof-edit-textarea{min-height:148px;max-height:240px;resize:none;overflow:auto}
+.login-input[type="file"]::file-selector-button{margin-right:12px;padding:9px 14px;border:none;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .login-remember{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--muted-text);user-select:none;}
 .login-remember input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 #loginModal .login-remember{display:none!important}
 .login-btn{padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-soft));border:none;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.08em;transition:transform .2s,box-shadow .2s;}
 #loginModal .login-form{gap:16px}
 #loginModal .login-title{margin:6px 0 10px}
-#loginModal .login-input{background:linear-gradient(180deg,rgba(245,246,250,.96),rgba(235,238,244,.94));color:#17151f;border-color:rgba(255,255,255,.2)}
-#loginModal .login-input::placeholder{color:rgba(23,21,31,.45)}
+#loginModal .login-input{background:linear-gradient(180deg,rgba(34,35,46,.98),rgba(24,25,34,.98));color:#f5f7ff;border-color:rgba(255,255,255,.08)}
+#loginModal .login-input::placeholder{color:rgba(232,236,255,.42)}
 .login-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(255,70,85,.35);}
 .login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .login-error{font-size:13px;color:var(--accent);text-align:center;min-height:20px}
@@ -901,6 +909,9 @@ let pendingNameParticles='particles-none';
 let pendingShowcaseUrl='';
 let pendingShowcaseFill=false;
 let pendingProfileFont='font-poppins';
+let pendingAvatarSourceMode='file';
+let pendingBannerSourceMode='file';
+let assetSourceTarget='avatar';
 const DISABLED_BANNER_OVERLAYS=new Set(['overlay-noise','overlay-snow','overlay-wave']);
 let currentLang=localStorage.getItem('eter-language')||'pl';
 let pendingDeleteAction=null;
@@ -1749,7 +1760,7 @@ const PROFILE_CFG_PREFIX='__cfg__';
 const PREMIER_MARKER='[[PREMIER]]';
 function cfgEntry(key,value){return {label:`${PROFILE_CFG_PREFIX}${key}`,url:value};}
 function parseProfileConfig(rawLinks=[]){
-  const config={post_skin:'skin-default',banner_overlay:'overlay-none',name_particles:'particles-none',showcase_url:'',showcase_fill:'0'};
+  const config={post_skin:'skin-default',banner_overlay:'overlay-none',name_particles:'particles-none',showcase_url:'',showcase_fill:'0',avatar_source_mode:'file',banner_source_mode:'file'};
   const visible=[];
   (Array.isArray(rawLinks)?rawLinks:[]).forEach(item=>{
     const label=String(item?.label||'');
@@ -1770,7 +1781,9 @@ function buildSocialLinksPayload(visibleLinks){
     cfgEntry('name_particles',pendingNameParticles),
     cfgEntry('showcase_url',pendingShowcaseUrl||''),
     cfgEntry('showcase_fill',pendingShowcaseFill?'1':'0'),
-    cfgEntry('profile_font',pendingProfileFont||'font-poppins')
+    cfgEntry('profile_font',pendingProfileFont||'font-poppins'),
+    cfgEntry('avatar_source_mode',pendingAvatarSourceMode||'file'),
+    cfgEntry('banner_source_mode',pendingBannerSourceMode||'file')
   ];
 }
 const PROFILE_ABOUT_EFFECTS=['particles-none','particles-ember','particles-cosmic','particles-frost','particles-neon','particles-gold','particles-rose','particles-orbit','particles-runes','particles-bubbles','particles-leaves','particles-cornerflare','particles-seal','particles-petals','particles-mist','particles-comets','particles-glowring'];
@@ -2217,6 +2230,8 @@ renderProfile=((original)=>function(prof){
   pendingShowcaseUrl=parsed.config.showcase_url||'';
   pendingShowcaseFill=String(parsed.config.showcase_fill||'0')==='1';
   pendingProfileFont=parsed.config.profile_font||'font-poppins';
+  pendingAvatarSourceMode=parsed.config.avatar_source_mode||'file';
+  pendingBannerSourceMode=parsed.config.banner_source_mode||'file';
   original(prof);
   const showcaseInput=document.getElementById('editShowcaseUrl');
   if(showcaseInput)showcaseInput.value=pendingShowcaseUrl||'';
@@ -2227,6 +2242,7 @@ renderProfile=((original)=>function(prof){
   document.querySelectorAll('[data-particles]').forEach(el=>el.classList.toggle('active',el.dataset.particles===pendingNameParticles));
   document.querySelectorAll('[data-font]').forEach(el=>el.classList.toggle('active',el.dataset.font===pendingProfileFont));
   applyProfileExtras();
+  updateMemorySaverBadge();
   renderShowcase();
 })(renderProfile);
 
@@ -2308,17 +2324,6 @@ loadPosts=async function(username){
     if(expandBtn&&textEl){
       const openPreview=()=>openPostView(post);
       expandBtn.addEventListener('click',openPreview);
-      textEl.addEventListener('click',openPreview);
-      card.addEventListener('click',e=>{
-        if(e.target.closest('.prof-post-action')||e.target.closest('.prof-post-media')||e.target.closest('.prof-post-expand'))return;
-        openPreview();
-      });
-    }
-    if(!expandBtn){
-      card.addEventListener('click',e=>{
-        if(e.target.closest('.prof-post-action')||e.target.closest('.prof-post-media'))return;
-        openPostView(post);
-      });
     }
     grid.appendChild(card);
   });
@@ -2661,6 +2666,182 @@ applyProfileExtras=function(){
   }
 };
 
+function ensureAssetSourceModal(){
+  if(document.getElementById('assetSourceModal'))return;
+  document.body.insertAdjacentHTML('beforeend',`
+    <div class="modal asset-source-modal" id="assetSourceModal">
+      <div class="modal-header"><h3 id="assetSourceTitle">Źródło obrazu</h3><button class="modal-close" onclick="closeAssetSourceModal()">×</button></div>
+      <div class="login-form">
+        <div class="cropper-hint" id="assetSourceHint">Wybierz, czy chcesz dodać plik z dysku, czy wkleić link do obrazu.</div>
+        <div class="theme-picker" style="grid-template-columns:1fr 1fr" id="assetSourceSwitch">
+          <div class="theme-swatch active" id="assetSourceUploadTab" onclick="selectAssetSourceMode('upload',this)">Prześlij plik</div>
+          <div class="theme-swatch" id="assetSourceLinkTab" onclick="selectAssetSourceMode('link',this)">Użyj linku</div>
+        </div>
+        <div id="assetSourceUploadPanel">
+          <div class="prof-edit-hint" id="assetUploadHint">Plik zostanie wysłany na storage i podmieniony od razu.</div>
+          <button class="login-btn" type="button" id="assetChooseFileBtn" onclick="triggerAssetFilePick()">Wybierz plik</button>
+        </div>
+        <div id="assetSourceLinkPanel" style="display:none">
+          <div class="memory-saver-badge visible" id="assetBadgePreview" style="position:static;max-width:none;margin-bottom:12px">
+            <span class="memory-saver-icon">🍃</span>
+            <span class="memory-saver-copy">
+              <span class="memory-saver-title">Ochroniarz Pamięci</span>
+              <span class="memory-saver-text">Banner z linku oszczędza pamięć hostingu i dostaje własną odznakę.</span>
+            </span>
+          </div>
+          <input class="login-input" type="url" id="assetLinkInput" placeholder="https://...">
+          <div class="prof-edit-hint" id="assetLinkHint">Przy bannerze z linku pojawi się odznaka oszczędzania pamięci hostingu.</div>
+          <div class="login-error" id="assetSourceError"></div>
+          <button class="login-btn" type="button" id="assetApplyLinkBtn" onclick="applyAssetLink()">Ustaw z linku</button>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function updateMemorySaverBadge(){
+  const bannerWrap=document.getElementById('bannerWrap');
+  if(!bannerWrap)return;
+  let badge=bannerWrap.querySelector('#memorySaverBadge');
+  if(!badge){
+    badge=document.createElement('div');
+    badge.id='memorySaverBadge';
+    badge.className='memory-saver-badge';
+    badge.innerHTML=`<span class="memory-saver-icon">🍃</span><span class="memory-saver-copy"><span class="memory-saver-title">Ochroniarz Pamięci</span><span class="memory-saver-text">Banner z linku oszczędza pamięć hostingu.</span></span>`;
+    bannerWrap.appendChild(badge);
+  }
+  badge.classList.toggle('visible',pendingBannerSourceMode==='link'&&Boolean(viewedProfile?.banner_url));
+}
+
+async function persistProfileConfigMeta(){
+  const access=getEditAccess(viewedUsername);
+  if(!access)return;
+  const payload=buildSocialLinksPayload(socialLinks);
+  let error=null;
+  const modernResult=await supabase.rpc('update_profile_by_code',{
+    p_username:viewedUsername,
+    p_code:access.code,
+    p_display_name:viewedProfile?.display_name||viewedProfile?.username||null,
+    p_bio:viewedProfile?.bio||null,
+    p_tracker_url:viewedProfile?.tracker_url||null,
+    p_profile_style:pendingProfileTheme,
+    p_frame_style:pendingFrameStyle,
+    p_social_links:payload,
+    p_custom_subline:viewedProfile?.custom_subline||null,
+    p_profile_background_url:viewedProfile?.profile_background_url||null,
+    p_top_links:topLinks,
+    p_name_effect:pendingNameEffect||null,
+    p_profile_background_strength:pendingBackdropStrength
+  });
+  error=modernResult.error||null;
+  if(error&&/function|schema cache|column|parameter|signature/i.test(error.message||'')){
+    const fallbackResult=await supabase.rpc('update_profile_by_code',{
+      p_username:viewedUsername,
+      p_code:access.code,
+      p_display_name:viewedProfile?.display_name||viewedProfile?.username||null,
+      p_bio:viewedProfile?.bio||null,
+      p_tracker_url:viewedProfile?.tracker_url||null,
+      p_profile_style:pendingProfileTheme,
+      p_frame_style:pendingFrameStyle,
+      p_social_links:payload
+    });
+    error=fallbackResult.error||null;
+  }
+  if(!error)viewedProfile={...viewedProfile,social_links:[...socialLinks]};
+}
+
+window.selectAssetSourceMode=function(mode,el){
+  document.querySelectorAll('#assetSourceSwitch .theme-swatch').forEach(item=>item.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const uploadPanel=document.getElementById('assetSourceUploadPanel');
+  const linkPanel=document.getElementById('assetSourceLinkPanel');
+  if(uploadPanel)uploadPanel.style.display=mode==='upload'?'block':'none';
+  if(linkPanel)linkPanel.style.display=mode==='link'?'block':'none';
+};
+
+window.openAssetSourceModal=function(type){
+  ensureAssetSourceModal();
+  assetSourceTarget=type;
+  closeAllPopups();
+  blurOverlay.classList.add('active');
+  document.getElementById('assetSourceModal').classList.add('active');
+  document.getElementById('assetSourceError').textContent='';
+  document.getElementById('assetLinkInput').value=type==='avatar'?(viewedProfile?.avatar_url||''):(viewedProfile?.banner_url||'');
+  document.getElementById('assetSourceTitle').textContent=type==='avatar'
+    ?(currentLang==='pl'?'Zdjęcie profilowe':'Profile picture source')
+    :(currentLang==='pl'?'Banner profilu':'Banner source');
+  document.getElementById('assetSourceHint').textContent=type==='avatar'
+    ?(currentLang==='pl'?'Możesz od razu przesłać plik albo wkleić link do avatara.':'Choose a local file or paste an avatar URL.')
+    :(currentLang==='pl'?'Możesz przesłać plik albo wkleić link do bannera. Link dodaje odznakę Ochroniarz Pamięci.':'Choose a local file or paste a banner URL. Using a link adds the Memory Saver badge.');
+  document.getElementById('assetLinkHint').textContent=type==='banner'
+    ?(currentLang==='pl'?'Przy bannerze z linku pojawi się odznaka oszczędzania pamięci hostingu.':'A linked banner gets the hosting memory saver badge.')
+    :(currentLang==='pl'?'Link działa bez uploadu na storage i ustawia obraz od razu.':'A link skips storage upload and sets the image instantly.');
+  document.getElementById('assetBadgePreview').style.display=type==='banner'?'flex':'none';
+  selectAssetSourceMode('upload',document.getElementById('assetSourceUploadTab'));
+};
+
+window.closeAssetSourceModal=function(){
+  const modal=document.getElementById('assetSourceModal');
+  if(modal)modal.classList.remove('active');
+  if(!document.getElementById('editPanel').classList.contains('open')&&!profileDropdown.classList.contains('active')&&!document.getElementById('postModal').classList.contains('active')&&!document.getElementById('loginModal').classList.contains('active')&&!document.getElementById('postViewModal').classList.contains('active'))blurOverlay.classList.remove('active');
+};
+
+window.triggerAssetFilePick=function(){
+  document.getElementById(assetSourceTarget==='avatar'?'avatarFileInput':'bannerFileInput').click();
+};
+
+async function uploadProfileAssetFile(file,type){
+  const access=getEditAccess(viewedUsername);
+  if(!file||!access)return;
+  const previousUrl=type==='avatar'?viewedProfile?.avatar_url:viewedProfile?.banner_url;
+  const ext=(file.name.split('.').pop()||'png').toLowerCase();
+  const nextPath=`${type}_${viewedUsername}.${ext}`;
+  const { error:se }=await supabase.storage.from('EterStorage').upload(nextPath,file,{upsert:true,contentType:file.type||`image/${ext}`});
+  if(se){alert('Błąd uploadu: '+se.message);return;}
+  const { data:ud }=supabase.storage.from('EterStorage').getPublicUrl(nextPath);
+  const versioned=`${ud.publicUrl}?t=${Date.now()}`;
+  const { error:updateError }=await supabase.rpc('update_profile_assets_by_code',{
+    p_username:viewedUsername,
+    p_code:access.code,
+    p_avatar_url:type==='avatar'?versioned:null,
+    p_banner_url:type==='banner'?versioned:null
+  });
+  if(updateError){alert('Błąd zapisu: '+updateError.message);return;}
+  await cleanupOldProfileAsset(previousUrl,nextPath);
+  if(type==='avatar')pendingAvatarSourceMode='file';
+  if(type==='banner')pendingBannerSourceMode='file';
+  applyProfileAssetToUi(type,versioned);
+  await persistProfileConfigMeta();
+  updateMemorySaverBadge();
+  closeAssetSourceModal();
+  showSaveStatus();
+}
+
+window.applyAssetLink=async function(){
+  const access=getEditAccess(viewedUsername);
+  if(!access)return;
+  const errorEl=document.getElementById('assetSourceError');
+  const raw=document.getElementById('assetLinkInput').value.trim();
+  errorEl.textContent='';
+  try{new URL(raw);}catch{errorEl.textContent=currentLang==='pl'?'Wklej poprawny link do obrazu.':'Paste a valid image URL.';return;}
+  const previousUrl=assetSourceTarget==='avatar'?viewedProfile?.avatar_url:viewedProfile?.banner_url;
+  const { error:updateError }=await supabase.rpc('update_profile_assets_by_code',{
+    p_username:viewedUsername,
+    p_code:access.code,
+    p_avatar_url:assetSourceTarget==='avatar'?raw:null,
+    p_banner_url:assetSourceTarget==='banner'?raw:null
+  });
+  if(updateError){errorEl.textContent=(currentLang==='pl'?'Błąd zapisu: ':'Save error: ')+updateError.message;return;}
+  if(assetSourceTarget==='avatar')pendingAvatarSourceMode='link';
+  if(assetSourceTarget==='banner')pendingBannerSourceMode='link';
+  await cleanupOldProfileAsset(previousUrl,'');
+  applyProfileAssetToUi(assetSourceTarget,raw);
+  await persistProfileConfigMeta();
+  updateMemorySaverBadge();
+  closeAssetSourceModal();
+  showSaveStatus();
+};
+
 const originalOpenCropper=openCropper;
 openCropper=function(file,type){
   originalOpenCropper(file,type);
@@ -2727,6 +2908,45 @@ window.saveProfile=async function(){
   if(button&&!button.disabled)button.textContent=currentLang==='pl'?'Zapisz zmiany':'Save changes';
 };
 
+const originalResetProfileAssetInputsEnhanced=resetProfileAssetInputs;
+resetProfileAssetInputs=function(){
+  originalResetProfileAssetInputsEnhanced();
+  const avatarInput=document.getElementById('avatarFileInput');
+  const bannerInput=document.getElementById('bannerFileInput');
+  if(avatarInput){
+    const cleanAvatar=avatarInput.cloneNode(true);
+    avatarInput.replaceWith(cleanAvatar);
+    cleanAvatar.addEventListener('change',async e=>{
+      const file=e.target.files[0];
+      if(file&&file.size>3*1024*1024){alert('Maks. 3 MB dla avatara.');e.target.value='';return;}
+      if(file)await uploadProfileAssetFile(file,'avatar');
+      e.target.value='';
+    });
+  }
+  if(bannerInput){
+    const cleanBanner=bannerInput.cloneNode(true);
+    bannerInput.replaceWith(cleanBanner);
+    cleanBanner.addEventListener('change',async e=>{
+      const file=e.target.files[0];
+      if(file&&file.size>5*1024*1024){alert('Maks. 5 MB dla bannera.');e.target.value='';return;}
+      if(file)await uploadProfileAssetFile(file,'banner');
+      e.target.value='';
+    });
+  }
+};
+
+const originalBootstrapEnhanced=bootstrap;
+bootstrap=async function(){
+  ensureAssetSourceModal();
+  await originalBootstrapEnhanced();
+  const bannerBtn=document.getElementById('bannerEditBtn');
+  const avatarBtn=document.getElementById('avatarEditBtn');
+  if(bannerBtn)bannerBtn.onclick=()=>openAssetSourceModal('banner');
+  if(avatarBtn)avatarBtn.onclick=()=>openAssetSourceModal('avatar');
+  resetProfileAssetInputs();
+  updateMemorySaverBadge();
+};
+
 const originalRenderProfileEnhanced=renderProfile;
 renderProfile=function(prof){
   originalRenderProfileEnhanced(prof);
@@ -2746,6 +2966,7 @@ async function bootstrap(){
 }
 
 bootstrap();
+blurOverlay.addEventListener('click',()=>closeAssetSourceModal());
 window.addEventListener('hashchange',tryOpenPostFromHash);
 </script>
 </body>
