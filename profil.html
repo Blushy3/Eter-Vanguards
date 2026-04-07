@@ -227,13 +227,18 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-family
 .prof-post-body{display:flex;flex-direction:column;gap:8px;padding:14px}
 .prof-post-title{font-size:15px;font-weight:700}
 .prof-post-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted-text)}
-.prof-post-text{font-size:13px;line-height:1.6;color:var(--text-color)}
+.prof-post-text{font-size:13px;line-height:1.6;color:var(--text-color);position:relative}
+.prof-post-text.is-collapsed{max-height:220px;overflow:hidden}
+.prof-post-text.is-collapsed::after{content:'';position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,rgba(20,20,28,0),rgba(20,20,28,.96))}
+.prof-post-expand{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--prof-card-border);background:rgba(255,255,255,.04);color:var(--text-color);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease}
+.prof-post-expand:hover{transform:translateY(-1px);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24)}
 .prof-post-actions{display:flex;gap:8px;flex-wrap:wrap}
 .prof-post-action{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--prof-card-border);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));color:var(--muted-text);font:inherit;font-size:12px;font-weight:600;transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease}
 .prof-post-action:hover{transform:translateY(-2px) scale(1.02);border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.06);box-shadow:0 10px 22px rgba(0,0,0,.16)}
 .prof-post-action:active{transform:scale(.96)}
 .prof-post-action.like-btn:hover{border-color:rgba(255,102,136,.45);box-shadow:0 10px 22px rgba(255,102,136,.14)}
 .prof-post-action.share-btn:hover{border-color:rgba(120,210,255,.42);box-shadow:0 10px 22px rgba(120,210,255,.14)}
+.prof-post-action.liked{color:#ff7a85;border-color:rgba(255,122,133,.45);background:rgba(255,70,85,.12);box-shadow:0 12px 28px rgba(255,70,85,.16)}
 .prof-post-title:empty,.prof-post-text:empty{display:none}
 .prof-showcase-panel{position:relative;min-height:220px;border-radius:18px;overflow:hidden;border:1px solid var(--prof-card-border);background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));display:none}
 .prof-showcase-panel.visible{display:block}
@@ -259,7 +264,8 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-family
 .banner-overlay-fireflies{background-image:radial-gradient(circle at 18% 28%,rgba(255,214,128,.95) 0 2px,transparent 2.6px),radial-gradient(circle at 66% 44%,rgba(255,175,92,.9) 0 2px,transparent 2.4px),radial-gradient(circle at 82% 24%,rgba(255,230,154,.85) 0 1.6px,transparent 2.1px);background-size:220px 220px;animation:overlayDrift 8s linear infinite}
 .banner-overlay-rain{background-image:linear-gradient(180deg,rgba(175,220,255,.35),transparent 78%);background-size:3px 26px;animation:rainSlide 1.2s linear infinite}
 .banner-overlay-sparks{background-image:radial-gradient(circle at 20% 20%,rgba(255,194,120,.9) 0 1.5px,transparent 2px),radial-gradient(circle at 50% 60%,rgba(255,110,92,.82) 0 1.4px,transparent 2px),radial-gradient(circle at 84% 34%,rgba(255,241,168,.9) 0 1.2px,transparent 1.8px);background-size:120px 120px;animation:overlayPulse 2.6s ease-in-out infinite}
-.name-particles{position:absolute;top:50%;left:100%;width:110px;height:42px;transform:translate(8px,-50%);pointer-events:none;display:none}
+.bio-particles-host{position:relative;overflow:hidden}
+.name-particles{position:absolute;right:16px;top:18px;width:110px;height:42px;transform:none;pointer-events:none;display:none}
 .name-particles.visible{display:block}
 .name-particles span{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.75;animation:particleFloat 3.2s ease-in-out infinite}
 .name-particles span:nth-child(1){top:5px;left:8px;animation-delay:0s}
@@ -390,6 +396,7 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 .login-input:focus{border-color:rgba(255,70,85,.5);box-shadow:0 0 0 3px rgba(255,70,85,.1);}
 .login-remember{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--muted-text);user-select:none;}
 .login-remember input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+#loginModal .login-remember{display:none!important}
 .login-btn{padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-soft));border:none;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.08em;transition:transform .2s,box-shadow .2s;}
 .login-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(255,70,85,.35);}
 .login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
@@ -1188,7 +1195,7 @@ function updateAccessUI(){
   const dropdown=document.getElementById('dropdownUsername');
   const postTrigger=document.getElementById('postTrigger');
   const labels=document.querySelectorAll('#loginModal .login-label');
-  const remember=document.querySelector('.login-remember');
+  const remember=document.querySelector('#loginModal .login-remember');
   document.querySelector('#loginModal .modal-header h3').textContent=isPl?'Kod dost\u0119pu':'Access code';
   document.querySelector('#loginModal .login-title').textContent=isPl?'Edycja profilu':'Profile editing';
   if(labels[0])labels[0].textContent=isPl?'Nick':'Nickname';
@@ -1196,7 +1203,7 @@ function updateAccessUI(){
   if(remember)remember.style.display='none';
   document.querySelector('.login-action-label').textContent=isPl?'Dost\u0119p':'Access';
   document.querySelector('#profileDropdown .profile-dropdown-name span').textContent=isPl?'Odblokowano dla':'Unlocked for';
-  document.querySelector('#profileDropdown .logout').textContent=isPl?'Wyczy\u015b\u0107 dost\u0119p':'Clear access';
+  document.querySelector('#profileDropdown .logout').textContent=isPl?'\ud83d\udeaa Anuluj dostęp':'\ud83d\udeaa Cancel access';
   document.getElementById('loginBtn').textContent=isPl?'Odblokuj':'Unlock';
   if(access?.username){
     value.textContent=access.username;
@@ -1383,6 +1390,15 @@ function sanitizePostContent(content=''){
 function isPremierPost(post){
   return String(post?.content||post?.description||'').includes(PREMIER_MARKER);
 }
+function escapeHtml(value=''){
+  return String(value).replace(/[&<>"']/g,char=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char]));
+}
+function getProfilePostId(post){
+  return String(post.id??`${post.username||'eter'}|${post.created_at||''}|${post.title||''}|${post.image_url||''}`);
+}
+const profilePostLikeState=new Map();
+const profileViewerLikeKey=localStorage.getItem('eter-viewer-key')||crypto.randomUUID();
+localStorage.setItem('eter-viewer-key',profileViewerLikeKey);
 function applyProfileExtras(){
   document.body.classList.remove('skin-default','skin-void','skin-icy','skin-ember','skin-celestial','skin-obsidian','skin-nebula','skin-toxic');
   if(pendingPostSkin&&pendingPostSkin!=='skin-default')document.body.classList.add(pendingPostSkin);
@@ -1402,14 +1418,15 @@ function applyProfileExtras(){
       layer.style.display='none';
     }
   }
-  const nameBlock=document.querySelector('.prof-name-block');
-  if(nameBlock){
-    let particles=nameBlock.querySelector('.name-particles');
+  const bioCard=document.getElementById('bioSectionTitle')?.closest('.prof-card');
+  if(bioCard){
+    bioCard.classList.add('bio-particles-host');
+    let particles=bioCard.querySelector('.name-particles');
     if(!particles){
       particles=document.createElement('div');
       particles.className='name-particles';
       particles.innerHTML='<span></span><span></span><span></span>';
-      nameBlock.appendChild(particles);
+      bioCard.appendChild(particles);
     }
     particles.className='name-particles';
     if(pendingNameParticles&&pendingNameParticles!=='particles-none'){
@@ -1420,14 +1437,16 @@ function applyProfileExtras(){
 function renderShowcase(){
   const host=document.getElementById('profGallery');
   const empty=document.getElementById('profGalleryEmpty');
+  const card=host?.closest('.prof-card');
   if(!host||!empty)return;
   host.className='prof-showcase-panel';
   host.innerHTML='';
   if(!pendingShowcaseUrl){
-    empty.style.display='block';
-    empty.textContent=currentLang==='pl'?'Brak showcase. Dodaj link do grafiki lub GIF-a w panelu edycji.':'No showcase yet. Add an image or GIF URL in the edit panel.';
+    if(card)card.style.display='none';
+    empty.style.display='none';
     return;
   }
+  if(card)card.style.display='';
   empty.style.display='none';
   host.classList.add('visible');
   host.classList.toggle('fill-panel',Boolean(pendingShowcaseFill));
@@ -1561,7 +1580,7 @@ function repairStaticText(){
   setText('#showcaseFillLabel',isPl?'Wypełnij panel':'Fill panel');
   setText('#postSkinLabel',isPl?'Sk\u00f3rka post\u00f3w':'Post card skin');
   setText('#bannerOverlayLabel',isPl?'Nak\u0142adka bannera':'Banner overlay');
-  setText('#particlesLabel',isPl?'Particles przy nicku':'Nickname particles');
+  setText('#particlesLabel',isPl?'Particles przy sekcji O mnie':'Particles near About section');
   setText('#nameEffectLabel',isPl?'Efekt nicku':'Nickname effect');
   setText('#frameLabel',isPl?'Ramka avatara':'Avatar frame');
   setText('#profileLinksHint',isPl?'Linki mo\u017cesz ustawi\u0107 w panelu edycji profilu.':'You can configure links in the profile edit panel.');
@@ -1576,7 +1595,7 @@ function repairStaticText(){
   setText('#postTrigger',isPl?'\u2726 Nowy post':'\u2726 New post');
   setText('#profileLink',isPl?'\ud83d\udc64 Zobacz profil':'\ud83d\udc64 View profile');
   setText('.profile-dropdown-name span',isPl?'Zalogowany jako':'Unlocked for');
-  setText('.profile-dropdown-item.logout',isPl?'\ud83d\udeaa Wyloguj si\u0119':'\ud83d\udeaa Log out');
+  setText('.profile-dropdown-item.logout',isPl?'\ud83d\udeaa Anuluj dostęp':'\ud83d\udeaa Cancel access');
   setText('.refresh-confirm-title',isPl?'Potwierdzenie':'Confirmation');
   setText('.refresh-confirm-text',isPl?'Czy na pewno chcesz od\u015bwie\u017cy\u0107 stron\u0119?':'Are you sure you want to refresh the page?');
   setText('#refreshConfirmBtn',isPl?'Od\u015bwie\u017c':'Refresh');
@@ -1772,15 +1791,88 @@ loadPosts=async function(username){
     const title=(post.title||'').trim();
     const emoji=(post.emoji||'').trim();
     const description=sanitizePostContent(post.content||post.description||'');
-    const titleLine=(emoji||title)?`<div class="prof-post-title">${emoji?`${emoji} `:''}${title}</div>`:'';
-    const textLine=description?`<div class="prof-post-text">${description}</div>`:'';
+    const titleLine=(emoji||title)?`<div class="prof-post-title">${emoji?`${escapeHtml(emoji)} `:''}${escapeHtml(title)}</div>`:'';
+    const longPost=description.length>320;
+    const textLine=description?`<div class="prof-post-text${longPost?' is-collapsed':''}">${escapeHtml(description)}</div>`:'';
+    const expandLine=longPost?`<button class="prof-post-expand" type="button">${currentLang==='pl'?'Czytaj':'Read more'}</button>`:'';
     const premierBadge=isPremierPost(post)?`<span class="premier-badge">${currentLang==='pl'?'Premier':'Premier'}</span>`:'';
-    card.innerHTML=`${image}<div class="prof-post-body">${titleLine}<div class="prof-post-meta${premierBadge?' has-badge':''}"><div class="prof-post-meta-top"><span>${post.username||username}</span><span>${new Date(post.created_at||Date.now()).toLocaleDateString(currentLang==='pl'?'pl-PL':'en-US')}</span></div>${premierBadge}</div>${textLine}<div class="prof-post-actions"><button class="prof-post-action like-btn" type="button">&#10084; ${Number(post.likes_count||0)}</button><button class="prof-post-action share-btn" type="button">${currentLang==='pl'?'&#8599; Udost\u0119pnij':'&#8599; Share'}</button></div></div>`;
+    const liked=Boolean(profilePostLikeState.get(getProfilePostId(post)));
+    card.innerHTML=`${image}<div class="prof-post-body">${titleLine}<div class="prof-post-meta${premierBadge?' has-badge':''}"><div class="prof-post-meta-top"><span>${escapeHtml(post.username||username)}</span><span>${new Date(post.created_at||Date.now()).toLocaleDateString(currentLang==='pl'?'pl-PL':'en-US')}</span></div>${premierBadge}</div>${textLine}${expandLine}<div class="prof-post-actions"><button class="prof-post-action like-btn${liked?' liked':''}" type="button" data-action="like">&#10084; <span>${Number(post.likes_count||0)}</span></button><button class="prof-post-action share-btn" type="button" data-action="share">${currentLang==='pl'?'&#8599; Udost\u0119pnij':'&#8599; Share'}</button></div></div>`;
     const img=card.querySelector('img');
     if(img)img.addEventListener('click',()=>openLightbox(post.image_url));
+    const likeBtn=card.querySelector('[data-action="like"]');
+    const shareBtn=card.querySelector('[data-action="share"]');
+    const expandBtn=card.querySelector('.prof-post-expand');
+    const textEl=card.querySelector('.prof-post-text');
+    if(likeBtn)likeBtn.addEventListener('click',()=>handleProfilePostLike(post,likeBtn));
+    if(shareBtn)shareBtn.addEventListener('click',()=>shareProfilePost(post));
+    if(expandBtn&&textEl){
+      const toggleExpand=()=>{
+        const collapsed=textEl.classList.toggle('is-collapsed');
+        expandBtn.textContent=collapsed?(currentLang==='pl'?'Czytaj':'Read more'):(currentLang==='pl'?'Zwiń':'Show less');
+      };
+      expandBtn.addEventListener('click',toggleExpand);
+      textEl.addEventListener('click',toggleExpand);
+      card.addEventListener('click',e=>{
+        if(e.target.closest('.prof-post-action')||e.target.closest('.prof-post-media')||e.target.closest('.prof-post-expand'))return;
+        toggleExpand();
+      });
+    }
     grid.appendChild(card);
   });
 };
+
+async function handleProfilePostLike(post,button){
+  if(!post.id){alert(currentLang==='pl'?'Tego posta nie da się jeszcze polubić.':'This post cannot be liked yet.');return;}
+  const id=getProfilePostId(post);
+  const previousLiked=Boolean(profilePostLikeState.get(id));
+  const optimisticLiked=!previousLiked;
+  const countEl=button.querySelector('span');
+  const previousCount=Number(post.likes_count||0);
+  const nextCount=Math.max(0,previousCount+(optimisticLiked?1:-1));
+  button.disabled=true;
+  profilePostLikeState.set(id,optimisticLiked);
+  button.classList.toggle('liked',optimisticLiked);
+  if(countEl)countEl.textContent=String(nextCount);
+  try{
+    const { data, error } = await supabase.rpc('toggle_post_like',{
+      p_post_id:post.id,
+      p_viewer_key:profileViewerLikeKey,
+      p_viewer_username:getEditAccess(viewedUsername)?.username||null
+    });
+    if(error)throw error;
+    const liked=Boolean(data?.liked);
+    const likesCount=Number(data?.likes_count??nextCount);
+    profilePostLikeState.set(id,liked);
+    button.classList.toggle('liked',liked);
+    if(countEl)countEl.textContent=String(likesCount);
+    post.likes_count=likesCount;
+  }catch(error){
+    profilePostLikeState.set(id,previousLiked);
+    button.classList.toggle('liked',previousLiked);
+    if(countEl)countEl.textContent=String(previousCount);
+    alert(`${currentLang==='pl'?'Błąd polubienia':'Like error'}: ${error.message}`);
+  }finally{
+    button.disabled=false;
+  }
+}
+
+async function shareProfilePost(post){
+  const title=(post.title||'').trim();
+  const body=sanitizePostContent(post.content||post.description||'');
+  const emoji=(post.emoji||'').trim();
+  const url=`${location.origin}${location.pathname}?user=${encodeURIComponent(post.username||viewedUsername)}`;
+  const text=[emoji,title,body].filter(Boolean).join(' ').trim();
+  if(navigator.share){
+    try{await navigator.share({title:title||'Post',text:text||url,url});return;}catch{}
+  }
+  try{
+    await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);
+    alert(currentLang==='pl'?'Link do posta skopiowany.':'Post link copied.');
+  }catch{
+    alert(url);
+  }
+}
 
 renderLinks=function(){
   const list=document.getElementById('profLinksList');
