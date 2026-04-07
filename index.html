@@ -348,7 +348,7 @@ body.light-theme .player-name{font-weight:600}
 <div class="profile-dropdown" id="profileDropdown">
   <div class="profile-dropdown-name"><span>Zalogowany jako</span><span id="dropdownUsername">—</span></div>
   <a class="profile-dropdown-item" id="profileLink" href="profil.html">👤 Zobacz profil</a>
-  <div class="profile-dropdown-item logout" onclick="handleLogout()">🚪 Wyloguj się</div>
+  <div class="profile-dropdown-item logout" onclick="handleLogout()">🚪 Anuluj dostęp</div>
 </div>
 <div class="modal post-modal" id="postModal">
   <div class="modal-header"><h3>Nowy post</h3><button class="modal-close" onclick="closePostModal()">×</button></div>
@@ -516,7 +516,7 @@ function updateAccessUI(){
   if(remember)remember.style.display='none';
   document.querySelector('.login-action-label').textContent='Dostep';
   document.querySelector('#profileDropdown .profile-dropdown-name span').textContent='Odblokowano dla';
-  document.querySelector('#profileDropdown .logout').textContent='Wyczysc dostep';
+  document.querySelector('#profileDropdown .logout').textContent='🚪 Anuluj dostęp';
   document.getElementById('loginBtn').textContent='Odblokuj';
   // gallery removed from main page
   if(uploadAccess?.username){
