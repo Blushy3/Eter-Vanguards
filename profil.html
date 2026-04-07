@@ -578,6 +578,7 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
 .login-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-text);}
 .login-input{padding:13px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:var(--card-bg-strong);color:#f5f7ff;font:inherit;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s,transform .2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
 .login-input:focus{border-color:rgba(255,70,85,.5);box-shadow:0 0 0 3px rgba(255,70,85,.1);}
+#loginModal .login-input:focus,#postModal .login-input:focus,#postModal .prof-edit-textarea:focus{border-color:rgba(255,70,85,.5)!important;box-shadow:0 0 0 3px rgba(255,70,85,.1),inset 0 1px 0 rgba(255,255,255,.03)!important}
 #loginModal .login-input,#postModal .login-input,#postModal textarea.login-input{background:var(--card-bg-strong)!important;color:#f5f7ff;border-color:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
 #loginModal .login-input::placeholder,#postModal .login-input::placeholder,.prof-edit-textarea::placeholder{color:rgba(232,236,255,.42)}
 #postModal .prof-edit-textarea{min-height:148px;max-height:240px;resize:none;overflow:auto}
@@ -2387,17 +2388,13 @@ async function handleProfilePostLike(post,button){
 }
 
 async function shareProfilePost(post){
-  const title=(post.title||'').trim();
-  const body=sanitizePostContent(post.content||post.description||'');
-  const emoji=(post.emoji||'').trim();
   const url=`${location.origin}${location.pathname}?user=${encodeURIComponent(post.username||viewedUsername)}`;
-  const text=[emoji,title,body].filter(Boolean).join(' ').trim();
   if(navigator.share){
-    try{await navigator.share({title:title||'Post',text:text||url,url});return;}catch{}
+    try{await navigator.share({title:'Profil',url});return;}catch{}
   }
   try{
-    await navigator.clipboard.writeText(`${text?`${text}\n`:''}${url}`);
-    showActionToast(currentLang==='pl'?'Poprawnie skopiowano link do posta.':'Post link copied successfully.');
+    await navigator.clipboard.writeText(url);
+    showActionToast(currentLang==='pl'?'Poprawnie skopiowano link do profilu.':'Profile link copied successfully.');
   }catch{
     alert(url);
   }
