@@ -63,10 +63,11 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 .player-name{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:15px;letter-spacing:1px;opacity:.85;color:var(--text-color);text-shadow:var(--player-name-shadow);transition:.35s ease;text-align:center;z-index:2}
 .player:hover .player-name{opacity:0;transform:translate(-50%,-50%) scale(.9)}
 .player:hover img{opacity:1}
-.menu{position:fixed;background:var(--menu-bg);border:1px solid var(--card-border-strong);backdrop-filter:blur(14px);border-radius:14px;padding:15px;opacity:0;transform:scale(.8);pointer-events:none;transition:.2s ease;z-index:1000}
-.menu.active{opacity:1;transform:scale(1);pointer-events:auto}
-.menu h3{margin:0 0 10px;font-size:14px;opacity:.8;color:var(--text-color)}
-.menu a{display:block;margin:6px 0;color:var(--menu-link);text-decoration:none;font-size:13px}
+.menu{position:fixed;min-width:220px;background:linear-gradient(180deg,rgba(18,20,30,.98),rgba(12,14,22,.96));border:1px solid var(--card-border-strong);backdrop-filter:blur(18px);border-radius:18px;padding:16px;opacity:0;transform:translateY(6px) scale(.94);pointer-events:none;transition:.2s ease;z-index:1000;box-shadow:0 24px 54px rgba(6,9,18,.32)}
+.menu.active{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.menu h3{margin:0 0 12px;font-size:15px;font-weight:700;color:var(--text-color);line-height:1.35}
+.menu a{display:flex;align-items:center;gap:8px;margin:6px 0;padding:9px 10px;border-radius:10px;color:var(--menu-link);text-decoration:none;font-size:13px;font-weight:600;transition:background .18s ease,color .18s ease,transform .18s ease}
+.menu a:hover{background:rgba(255,255,255,.06);color:#fff;transform:translateX(2px)}
 .info-panel,.score-panel,.history-panel,.gallery-panel{background:var(--card-bg);border:1px solid var(--card-border);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:15px;backdrop-filter:blur(18px);transition:transform .35s ease,border-color .35s ease,box-shadow .35s ease,background .35s ease}
 .info-panel h3,.score-panel h3,.history-panel h3,.gallery-panel h3{text-align:center;font-size:20px;margin:0 0 10px;color:var(--text-color)}
 .gallery-panel{display:none!important}
@@ -137,7 +138,7 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 .post-meta-top{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
 .premier-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:linear-gradient(135deg,#fff1a8,#ffcc58);color:#4a3400;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;align-self:flex-start}
 .post-text{position:relative}
-.post-text.is-collapsed{max-height:130px;overflow:hidden}
+.post-text.is-collapsed{max-height:108px;overflow:hidden}
 .post-text.is-collapsed::after{content:'';position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(180deg,rgba(20,20,28,0),rgba(20,20,28,.96))}
 .post-expand{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid var(--card-border);background:rgba(255,255,255,.04);color:var(--text-color);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease}
 .post-expand:hover{transform:translateY(-1px);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24)}
@@ -169,6 +170,13 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 .lightbox img{max-width:min(92vw,900px);max-height:85vh;border-radius:16px;box-shadow:0 40px 100px rgba(0,0,0,.5);object-fit:contain}
 .lightbox-close{position:absolute;top:20px;right:24px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s}
 .lightbox-close:hover{transform:rotate(90deg);background:rgba(255,70,85,.2)}
+.post-view-modal{width:min(760px,calc(100vw - 28px));padding:22px}
+.post-view-wrap{display:flex;flex-direction:column;gap:16px}
+.post-view-image{width:100%;max-height:42vh;border-radius:18px;object-fit:cover;border:1px solid var(--card-border);display:none}
+.post-view-image.visible{display:block}
+.post-view-title{font-size:24px;font-weight:700;line-height:1.15}
+.post-view-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted-text)}
+.post-view-text{font-size:15px;line-height:1.8;white-space:pre-wrap;word-break:break-word}
 
 /* BLUR OVERLAY */
 #blur-overlay{position:fixed;inset:0;background:rgba(10,12,18,.55);opacity:0;pointer-events:none;backdrop-filter:blur(4px);transition:opacity .2s;z-index:1500}
@@ -390,6 +398,15 @@ body.light-theme .player-name{font-weight:600}
     </div>
   </div>
 </div>
+<div class="modal post-view-modal" id="postViewModal">
+  <div class="modal-header"><h3 id="postViewLabel">Podgląd posta</h3><button class="modal-close" onclick="closePostView()">×</button></div>
+  <div class="post-view-wrap">
+    <img class="post-view-image" id="postViewImage" alt="">
+    <div class="post-view-title" id="postViewTitle"></div>
+    <div class="post-view-meta"><span id="postViewAuthor"></span><span id="postViewDate"></span></div>
+    <div class="post-view-text" id="postViewText"></div>
+  </div>
+</div>
 <div class="control-panel">
   <button class="control-action" id="loginToggle" type="button" style="padding-left:14px;padding-right:16px">
     <span class="login-action-avatar" id="loginAvatar">?</span>
@@ -529,8 +546,8 @@ function updateAccessUI(){
   const postTrigger=document.getElementById('postTrigger');
   const labels=document.querySelectorAll('#loginModal .login-label');
   const remember=document.querySelector('.login-remember');
-  document.querySelector('#loginModal .modal-header h3').textContent='Kod dostepu';
-  document.querySelector('#loginModal .login-title').textContent='Udostepnij Posty';
+  document.querySelector('#loginModal .modal-header h3').textContent='Odblokuj';
+  document.querySelector('#loginModal .login-title').textContent='ETER VANGUARDS';
   if(labels[0])labels[0].textContent='Nick';
   if(labels[1])labels[1].textContent='Kod';
   if(remember)remember.style.display='none';
@@ -627,6 +644,24 @@ function showActionToast(message,title=null){
   clearTimeout(showActionToast._timer);
   showActionToast._timer=setTimeout(()=>toast.classList.remove('visible'),1700);
 }
+window.closePostView=function(){
+  document.getElementById('postViewModal').classList.remove('active');
+  if(!document.getElementById('loginModal').classList.contains('active')&&!document.getElementById('postModal').classList.contains('active')&&!document.getElementById('deleteConfirmModal').classList.contains('active'))blurOverlay.classList.remove('active');
+};
+function openPostView(post){
+  const title=getPostTitle(post);
+  const emoji=getPostEmoji(post);
+  const body=getPostBody(post);
+  const image=document.getElementById('postViewImage');
+  document.getElementById('postViewTitle').textContent=[emoji,title].filter(Boolean).join(' ')||(currentLang==='pl'?'Post':'Post');
+  document.getElementById('postViewAuthor').textContent=post.username||'eter';
+  document.getElementById('postViewDate').textContent=fmtDate(post.created_at||new Date().toISOString());
+  document.getElementById('postViewText').textContent=body||'';
+  if(post.image_url){image.src=post.image_url;image.classList.add('visible');}
+  else{image.removeAttribute('src');image.classList.remove('visible');}
+  blurOverlay.classList.add('active');
+  document.getElementById('postViewModal').classList.add('active');
+}
 function askDeleteConfirmation(onConfirm){
   pendingDeleteAction=onConfirm;
   blurOverlay.classList.add('active');
@@ -677,7 +712,7 @@ function makePostCard(post){
   if(emoji)parts.push(`<div class="post-emoji">${escapeHtml(emoji)}</div>`);
   if(title)parts.push(`<div class="post-title">${escapeHtml(title)}</div>`);
   parts.push(`<div class="post-meta${premierBadge?' has-badge':''}"><div class="post-meta-top"><a class="post-author" href="profil.html?user=${encodeURIComponent(author)}">${escapeHtml(author)}</a><span>${fmtDate(post.created_at||new Date().toISOString())}</span></div>${premierBadge}</div>`);
-  const longPost=body.length>260;
+  const longPost=body.length>220;
   if(body)parts.push(`<div class="post-text${longPost?' is-collapsed':''}">${escapeHtml(body)}</div>`);
   if(longPost)parts.push(`<button class="post-expand" type="button">${currentLang==='pl'?'Czytaj':T().readMore}</button>`);
   parts.push(`<div class="post-actions"><button class="post-action${liked?' liked':''}" type="button" data-action="like"><span class="post-action-icon">❤</span><span>${likes}</span></button>${showShare?`<button class="post-action shareable" type="button" data-action="share"><span class="post-action-icon">↗</span><span>${T().sharePost}</span></button>`:''}${canDelete?`<button class="post-action" type="button" data-action="delete"><span class="post-action-icon">✕</span><span>${T().deletePost}</span></button>`:''}</div>`);
@@ -697,15 +732,18 @@ function makePostCard(post){
     if(deleteBtn)deleteBtn.addEventListener('click',()=>deletePost(post));
   }
   if(expandBtn&&textEl){
-    const toggleExpand=()=>{
-      const collapsed=textEl.classList.toggle('is-collapsed');
-      expandBtn.textContent=collapsed?(currentLang==='pl'?'Czytaj':T().readMore):(currentLang==='pl'?'Zwiń':T().showLess);
-    };
-    expandBtn.addEventListener('click',toggleExpand);
-    textEl.addEventListener('click',toggleExpand);
+    const openPreview=()=>openPostView(post);
+    expandBtn.addEventListener('click',openPreview);
+    textEl.addEventListener('click',openPreview);
     el.addEventListener('click',e=>{
       if(e.target.closest('.post-action')||e.target.closest('.post-media')||e.target.closest('.post-expand'))return;
-      toggleExpand();
+      openPreview();
+    });
+  }
+  if(!expandBtn){
+    el.addEventListener('click',e=>{
+      if(e.target.closest('.post-action')||e.target.closest('.post-media'))return;
+      openPostView(post);
     });
   }
   return el;
@@ -983,7 +1021,7 @@ loginToggle.addEventListener('click',e=>{
 document.getElementById('postTrigger').addEventListener('click',e=>{e.stopPropagation();openPostModal();});
 refreshButton.addEventListener('click',e=>{e.stopPropagation();closeAllPopups();refreshConfirm.classList.add('active');});
 document.getElementById('refreshConfirmBtn').addEventListener('click',()=>{['eter-theme','eter-language'].forEach(k=>localStorage.removeItem(k));sessionStorage.removeItem(UPLOAD_ACCESS_KEY);location.reload(true);});
-blurOverlay.addEventListener('click',()=>{closeLoginModal();closeMapModal();closePostModal();});
+blurOverlay.addEventListener('click',()=>{closeLoginModal();closeMapModal();closePostModal();closePostView();});
 window.addEventListener('click',e=>{
   if(!refreshConfirm.contains(e.target)&&e.target!==refreshButton)refreshConfirm.classList.remove('active');
   if(!profileDropdown.contains(e.target)&&!loginToggle.contains(e.target))profileDropdown.classList.remove('active');
@@ -1014,11 +1052,19 @@ function renderTeam(){
     el.addEventListener('click',e=>{
       e.stopPropagation();
       const menu=document.getElementById('menu');
-      menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
-      document.getElementById('menuTitle').textContent=`${p.name} - ${p.agent}`;
-      document.getElementById('profilePlayerLink').href=`profil.html?user=${encodeURIComponent(p.name)}`;
-      document.getElementById('lineupLink').href=lineupLinks[p.agent]||'#';
-      document.getElementById('statsLink').href=statsLinks[p.name]||'#';
+      const left=Math.min(window.innerWidth-250,Math.max(16,e.clientX-24));
+      const top=Math.min(window.innerHeight-190,Math.max(16,e.clientY-18));
+      menu.style.left=left+'px';menu.style.top=top+'px';
+      document.getElementById('menuTitle').textContent=`${p.name} • ${p.agent}`;
+      const profileLink=document.getElementById('profilePlayerLink');
+      const lineupLink=document.getElementById('lineupLink');
+      const statsLink=document.getElementById('statsLink');
+      profileLink.href=`profil.html?user=${encodeURIComponent(p.name)}`;
+      lineupLink.href=lineupLinks[p.agent]||'#';
+      statsLink.href=statsLinks[p.name]||'#';
+      profileLink.textContent='👤 Profil';
+      lineupLink.textContent='🎯 Agent';
+      statsLink.textContent='📊 Statystyki';
       profileDropdown.classList.remove('active');refreshConfirm.classList.remove('active');
       menu.classList.add('active');
     });
@@ -1068,11 +1114,13 @@ function applyLang(lang){
   const deleteCancel=document.getElementById('deleteCancelBtn');
   const deleteConfirm=document.getElementById('deleteConfirmBtn');
   const toastTitle=document.getElementById('actionToastTitle');
+  const postViewLabel=document.getElementById('postViewLabel');
   if(deleteTitle)deleteTitle.textContent=lang==='pl'?'Usuń post':'Delete post';
   if(deleteText)deleteText.textContent=lang==='pl'?'Czy na pewno chcesz to zrobić? Nie będzie dało się tego cofnąć.':'Are you sure you want to do this? This cannot be undone.';
   if(deleteCancel)deleteCancel.textContent=lang==='pl'?'Anuluj':'Cancel';
   if(deleteConfirm)deleteConfirm.textContent=lang==='pl'?'Usuń':'Delete';
   if(toastTitle)toastTitle.textContent=lang==='pl'?'Gotowe':'Done';
+  if(postViewLabel)postViewLabel.textContent=lang==='pl'?'Podglad posta':'Post preview';
 }
 
 function applyTheme(theme){
