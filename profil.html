@@ -110,6 +110,8 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-weight
 .prof-banner-overlay{position:absolute;inset:0;background:var(--prof-banner-overlay);}
 .prof-banner-edit{position:absolute;top:14px;right:14px;padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.4);color:#fff;font:inherit;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);transition:background .2s,transform .2s;display:none;}
 .prof-banner-edit:hover{background:rgba(0,0,0,0.6);transform:translateY(-1px);}
+.prof-banner-remove{position:absolute;top:14px;right:136px;width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.4);color:#fff;font:inherit;font-size:18px;line-height:1;cursor:pointer;backdrop-filter:blur(8px);transition:background .2s,transform .2s;display:none;align-items:center;justify-content:center}
+.prof-banner-remove:hover{background:rgba(0,0,0,.6);transform:translateY(-1px)}
 
 /* ============================================================
    AVATAR AREA
@@ -153,12 +155,17 @@ body.prof-valorant .prof-name,body.prof-valorant .prof-section-title{font-weight
 @keyframes pulseNeon{0%,100%{opacity:1}50%{opacity:.5}}
 
 .prof-avatar-edit-btn{position:absolute;bottom:-2px;right:-2px;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--prof-accent),var(--prof-accent2));border:2px solid var(--page-bg);color:#fff;font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;}
+.prof-avatar-remove-btn{position:absolute;bottom:-2px;right:38px;width:36px;height:36px;border-radius:50%;background:rgba(14,16,26,.92);border:2px solid var(--page-bg);color:#fff;font-size:18px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
 .prof-avatar-wrap::after{pointer-events:none}
 .prof-avatar,.prof-avatar-wrap{z-index:1}
 .prof-avatar-edit-btn{z-index:6}
+.prof-avatar-remove-btn{z-index:6}
 .prof-avatar-edit-btn:hover{transform:scale(1.15);box-shadow:0 0 12px var(--prof-glow);}
+.prof-avatar-remove-btn:hover{transform:scale(1.15);box-shadow:0 0 12px rgba(255,255,255,.12)}
 .is-own-profile .prof-avatar-edit-btn{display:flex;}
+.is-own-profile .prof-avatar-remove-btn{display:flex;}
 .is-own-profile .prof-banner-edit{display:block;}
+.is-own-profile .prof-banner-remove{display:flex;}
 
 .prof-name-block{padding-bottom:14px;flex:1;min-width:0;}
 .prof-name{font-size:clamp(22px,4vw,36px);font-weight:700;color:var(--text-color);line-height:1.1;word-break:break-word;}
@@ -623,6 +630,7 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
   <div class="prof-banner-wrap" id="bannerWrap">
     <img class="prof-banner-img" id="bannerImg" src="" alt="">
     <div class="prof-banner-overlay"></div>
+    <button class="prof-banner-remove" id="bannerRemoveBtn" type="button" title="Usuń banner">×</button>
     <button class="prof-banner-edit" id="bannerEditBtn" onclick="document.getElementById('bannerFileInput').click()">📷 Zmień banner</button>
   </div>
 
@@ -630,6 +638,7 @@ body.light-theme .theme-toggle-indicator{background:linear-gradient(135deg,#fff3
   <div class="prof-avatar-row">
     <div class="prof-avatar-wrap" id="avatarWrap">
       <div class="prof-avatar" id="profAvatar">?</div>
+      <button class="prof-avatar-remove-btn" id="avatarRemoveBtn" type="button" title="Usuń zdjęcie">×</button>
       <button class="prof-avatar-edit-btn" id="avatarEditBtn" onclick="document.getElementById('avatarFileInput').click()">📷</button>
     </div>
     <div class="prof-name-block">
@@ -2865,20 +2874,27 @@ window.applyAssetLink=async function(){
 };
 
 window.clearLinkedAsset=async function(){
+  return clearProfileAssetByType(assetSourceTarget);
+};
+
+async function clearProfileAssetByType(type){
   const access=getEditAccess(viewedUsername);
   if(!access)return;
   const errorEl=document.getElementById('assetSourceError');
-  errorEl.textContent='';
-  const previousUrl=assetSourceTarget==='avatar'?viewedProfile?.avatar_url:viewedProfile?.banner_url;
+  if(errorEl)errorEl.textContent='';
+  const previousUrl=type==='avatar'?viewedProfile?.avatar_url:viewedProfile?.banner_url;
   const { error:updateError }=await supabase.rpc('update_profile_assets_by_code',{
     p_username:viewedUsername,
     p_code:access.code,
-    p_avatar_url:assetSourceTarget==='avatar'?'':null,
-    p_banner_url:assetSourceTarget==='banner'?'':null
+    p_avatar_url:type==='avatar'?'':null,
+    p_banner_url:type==='banner'?'':null
   });
-  if(updateError){errorEl.textContent=(currentLang==='pl'?'Błąd zapisu: ':'Save error: ')+updateError.message;return;}
+  if(updateError){
+    if(errorEl)errorEl.textContent=(currentLang==='pl'?'Błąd zapisu: ':'Save error: ')+updateError.message;
+    return;
+  }
   await cleanupOldProfileAsset(previousUrl,'');
-  if(assetSourceTarget==='avatar'){
+  if(type==='avatar'){
     pendingAvatarSourceMode='file';
     viewedProfile={...viewedProfile,avatar_url:''};
     document.getElementById('profAvatar').innerHTML=(viewedProfile?.display_name||viewedProfile?.username||'B').slice(0,1).toUpperCase();
@@ -2894,7 +2910,7 @@ window.clearLinkedAsset=async function(){
   updateMemorySaverBadge();
   closeAssetSourceModal();
   showSaveStatus();
-};
+}
 
 const originalOpenCropper=openCropper;
 openCropper=function(file,type){
@@ -2989,7 +3005,10 @@ openAssetSourceModal=function(type){
     uploadDeleteBtn.textContent=type==='banner'
       ?(currentLang==='pl'?'Usuń banner':'Remove banner')
       :(currentLang==='pl'?'Usuń zdjęcie':'Remove picture');
+    uploadDeleteBtn.style.display='none';
   }
+  const linkDeleteBtn=document.getElementById('assetClearBtn');
+  if(linkDeleteBtn)linkDeleteBtn.style.display='none';
   const linkHint=document.getElementById('assetLinkHint');
   if(linkHint){
     linkHint.textContent=type==='banner'
@@ -3068,8 +3087,12 @@ bootstrap=async function(){
   await originalBootstrapEnhanced();
   const bannerBtn=document.getElementById('bannerEditBtn');
   const avatarBtn=document.getElementById('avatarEditBtn');
+  const bannerRemoveBtn=document.getElementById('bannerRemoveBtn');
+  const avatarRemoveBtn=document.getElementById('avatarRemoveBtn');
   if(bannerBtn)bannerBtn.onclick=()=>openAssetSourceModal('banner');
   if(avatarBtn)avatarBtn.onclick=()=>openAssetSourceModal('avatar');
+  if(bannerRemoveBtn)bannerRemoveBtn.onclick=()=>clearProfileAssetByType('banner');
+  if(avatarRemoveBtn)avatarRemoveBtn.onclick=()=>clearProfileAssetByType('avatar');
   resetProfileAssetInputs();
   updateMemorySaverBadge();
 };
