@@ -852,7 +852,7 @@ function makePostCard(post){
   const mediaMarkup=!media?'':media.type==='medal'
     ? `<div class="post-media"><iframe src="${escapeHtml(media.embedUrl)}" title="${escapeHtml(title||author)}" loading="lazy" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`
     : media.type==='medal-link'
-      ? `<div class="post-media medal-link-card"><a class="medal-card-action" href="${escapeHtml(media.url)}" target="_blank" rel="noopener noreferrer">Open on Medal.tv</a></div>`
+      ? `<div class="post-media medal-link-card"><a class="medal-card-action" href="${escapeHtml(media.url)}" target="_blank" rel="noopener noreferrer">Open on URL</a></div>`
       : `<div class="post-media"><img src="${escapeHtml(media.url)}" alt="${escapeHtml(altText)}" loading="lazy"></div>`;
   const baseLikes=Number(post.likes_count||0);
   const liked=Boolean(postLikeState.get(getPostId(post)));
