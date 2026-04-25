@@ -796,16 +796,6 @@ function getMedalEmbedUrl(url){
     return null;
   }
 }
-
-function isMedalUrl(url){
-  const value=String(url||'').trim();
-  if(!value)return false;
-  try{
-    const parsed=new URL(value);
-    return /(\.|^)medal\.tv$/i.test(parsed.hostname);
-  }catch{
-    return false;
-  }
 }
 
 function isLikelyImageUrl(url){
