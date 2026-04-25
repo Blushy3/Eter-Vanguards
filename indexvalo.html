@@ -60,7 +60,7 @@ repeating-linear-gradient(125deg, rgba(255,255,255,.025) 0 1px, transparent 1px 
 .card h2,.card h3{margin:0 0 10px;font-size:18px;text-align:center;color:var(--text-color);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
 .progress{height:16px;background:var(--surface-muted);border-radius:10px;overflow:hidden;margin-top:10px}
-.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));width:100%;border-radius:10px}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-soft));width:71%;border-radius:10px}
 .player{position:relative;min-height:216px;border-radius:18px;overflow:hidden;cursor:pointer;background:linear-gradient(180deg,rgba(22,22,30,.96),rgba(12,12,18,.96));border:1px solid var(--card-border);transition:transform .35s ease,border-color .35s ease,box-shadow .35s ease;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 14px 14px;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 18px) 100%,0 100%)}
 .player::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,70,85,.12),transparent 34%);pointer-events:none}
 .player-badge{display:none!important}
@@ -339,15 +339,15 @@ body.light-theme .player-name{font-weight:600}
     <div class="card info-panel dashboard-card half">
       <h3 data-i18n="infoTitle">Info</h3>
       <div class="info-row">
-        <div class="info-tile"><span class="info-label" data-i18n="dateLabel">Data</span><span class="info-value">25.04.2026</span></div>
+        <div class="info-tile"><span class="info-label" data-i18n="dateLabel">Data</span><span class="info-value">11.04.2026</span></div>
         <div class="info-tile"><span class="info-label" data-i18n="timeLabel">Godzina</span><span class="info-value">21:00 - 22:00</span></div>
         <div class="info-tile"><span class="info-label" data-i18n="matchesLabel">Mecze</span><span class="info-value">2</span></div>
-        <div class="info-tile map-click" onclick="showMap(event,'BREEZE')"><span class="info-label" data-i18n="mapLabel">Mapa</span><span class="info-value">BREEZE</span></div>
+        <div class="info-tile map-click" onclick="showMap(event,'SPLIT')"><span class="info-label" data-i18n="mapLabel">Mapa</span><span class="info-value">SPLIT</span></div>
       </div>
     </div>
     <div class="card score-panel dashboard-card half">
       <h3 data-i18n="premierScore">Premier Score</h3>
-      <div class="premier-score">650 / 600</div>
+      <div class="premier-score">525 / 600</div>
       <div class="progress"><div class="progress-bar"></div></div>
       <div class="score-ready" id="scoreReady">Playoffs Ready</div>
       <div class="score-info" data-i18n="scoreInfo">Min. 500 Premier Score aby zakwalifikować się do playoffs</div>
@@ -359,11 +359,9 @@ body.light-theme .player-name{font-weight:600}
     <div class="card history-panel dashboard-card full">
       <h3><span data-static-label="historyTitle">Historia</span> <button class="expand-btn" onclick="toggleHistory()">Rozwin <span class="expand-arrow">▼</span></button></h3>
       <div id="history-container">
-        <div class="history-row" data-result="lose"><div class="history-map">BIND</div><div class="history-opponent">vs DEMON CLAN</div><div class="history-score">03-13</div><div class="history-points">+25</div></div>
-        <div class="history-row" data-result="win"><div class="history-map">BIND</div><div class="history-opponent">vs SHARK</div><div class="history-score">13-03</div><div class="history-points">+100</div></div>
         <div class="history-row" data-result="win"><div class="history-map">LOTUS</div><div class="history-opponent">vs KAMYKI</div><div class="history-score">13-08</div><div class="history-points">+100</div></div>
-        <div class="history-row history-hidden" data-result="win"><div class="history-map">LOTUS</div><div class="history-opponent">vs VIVID</div><div class="history-score">13-05</div><div class="history-points">+100</div></div>
-        <div class="history-row history-hidden" data-result="lose"><div class="history-map">FRACTURE</div><div class="history-opponent">vs MISSINGSERVER</div><div class="history-score">13-15</div><div class="history-points">+25</div></div>
+        <div class="history-row" data-result="win"><div class="history-map">LOTUS</div><div class="history-opponent">vs VIVID</div><div class="history-score">13-05</div><div class="history-points">+100</div></div>
+        <div class="history-row" data-result="lose"><div class="history-map">FRACTURE</div><div class="history-opponent">vs MISSINGSERVER</div><div class="history-score">13-15</div><div class="history-points">+25</div></div>
         <div class="history-row history-hidden" data-result="win"><div class="history-map">FRACTURE</div><div class="history-opponent">vs GOOFY GOOBERS</div><div class="history-score">13-11</div><div class="history-points">+100</div></div>
         <div class="history-row history-hidden" data-result="win"><div class="history-map">HAVEN</div><div class="history-opponent">vs MONGORIA</div><div class="history-score">14-12</div><div class="history-points">+100</div></div>
         <div class="history-row history-hidden" data-result="win"><div class="history-map">HAVEN</div><div class="history-opponent">vs WIESULIS</div><div class="history-score">13-07</div><div class="history-points">+100</div></div>
@@ -487,6 +485,8 @@ let currentMapName=null;
 let playerProfiles={};
 
 if(false){
+// ---- USERNAME->EMAIL MAP ----
+const u2e={blushyk:'blushyk@eter.gg',tengrubytyp:'tengrubytyp@eter.gg',ratatuii:'ratatuii@eter.gg',licz1:'licz1@eter.gg',mdzer:'mdzer@eter.gg',future:'future@eter.gg'};
 
 // ---- AUTH ----
 window.handleLogin=async function(){
@@ -796,6 +796,16 @@ function getMedalEmbedUrl(url){
     return null;
   }
 }
+
+function isMedalUrl(url){
+  const value=String(url||'').trim();
+  if(!value)return false;
+  try{
+    const parsed=new URL(value);
+    return /(\.|^)medal\.tv$/i.test(parsed.hostname);
+  }catch{
+    return false;
+  }
 }
 
 function isLikelyImageUrl(url){
@@ -842,7 +852,7 @@ function makePostCard(post){
   const mediaMarkup=!media?'':media.type==='medal'
     ? `<div class="post-media"><iframe src="${escapeHtml(media.embedUrl)}" title="${escapeHtml(title||author)}" loading="lazy" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`
     : media.type==='medal-link'
-      ? `<div class="post-media medal-link-card"><a class="medal-card-action" href="${escapeHtml(media.url)}" target="_blank" rel="noopener noreferrer">Open on URL</a></div>`
+      ? `<div class="post-media medal-link-card"><a class="medal-card-action" href="${escapeHtml(media.url)}" target="_blank" rel="noopener noreferrer">Open on Medal.tv</a></div>`
       : `<div class="post-media"><img src="${escapeHtml(media.url)}" alt="${escapeHtml(altText)}" loading="lazy"></div>`;
   const baseLikes=Number(post.likes_count||0);
   const liked=Boolean(postLikeState.get(getPostId(post)));
